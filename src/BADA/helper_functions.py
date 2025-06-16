@@ -1,3 +1,7 @@
+"""
+Module containing helper functions for BADA methods
+"""
+
 import os
 from .aircraft_parameters import Bada3AircraftParameters
 from .model import Bada3FuelBurnModel
