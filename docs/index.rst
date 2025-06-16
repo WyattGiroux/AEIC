@@ -32,3 +32,10 @@ updated trajectory dynamics, parallelization, and more.
 
    src/AEIC/performance_model
    src/AEIC/trajectories/trajectories
+   src/BADA/bada
+   src/gridding/gridding
+   src/IO/io_formats
+   src/missions/mission
+   src/parsers/parsers
+   src/utils/utils
+   src/weather/weather

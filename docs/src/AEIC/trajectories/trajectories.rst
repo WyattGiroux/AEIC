@@ -6,4 +6,3 @@ Available Trajectory Models
    :maxdepth: 2
 
    legacy_trajectory
-   ads-b_trajectory
