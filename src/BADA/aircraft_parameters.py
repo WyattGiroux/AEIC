@@ -13,10 +13,10 @@ from typing import Optional
 
 @dataclass
 class Bada3AircraftParameters(BaseAircraftParameters):
-    """BADA3 aircraft parameters.
+    """BADA-3 aircraft parameters.
 
     This class implements the BADA3 aircraft parameters. It is based on the
-    BADA3.16 User Manual
+    BADA 3.16 User Manual
 
     """
 
@@ -53,12 +53,19 @@ class Bada3AircraftParameters(BaseAircraftParameters):
     cas_cruise_hi: Optional[float] = None
     cas_cruise_mach: Optional[float] = None
      
+     
     def assign_parameters_fromdict(self, parameters: dict):
         """
         Assigns the parameters from a dictionary.
+        
+        Parameters
+        ----------
+        parameters: dict
+            BADA-3 parameters to be assigned
         """
         for key in parameters:
             setattr(self, key, parameters[key])
+
 
     def get_params_asdict(self):
         """
