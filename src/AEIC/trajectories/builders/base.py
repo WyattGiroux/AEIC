@@ -280,8 +280,8 @@ class Builder(ABC):
 
         if not mass_converged:
             raise RuntimeError(
-                "Mass iteration failed to converge; final residual"
-                f"{mass_res * 100}% > {self.options.mass_iter_reltol * 100}%"
+                "Mass iteration failed to converge; final residual "
+                f"{mass_res:.2e} > {self.options.mass_iter_reltol:.2e}"
             )
 
     def _fly_iteration(self, traj: Trajectory, **kwargs):
