@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from AEIC.missions import Mission
 from AEIC.performance_model import PerformanceModel
@@ -16,11 +16,13 @@ from .base import Builder, Context, Options
 class SmartOptions:
     """Additional options for the smart trajectory builder."""
 
-    phases: dict[FlightPhase, int] = {
-        FlightPhase.CLIMB: 10,
-        FlightPhase.CRUISE: 10,
-        FlightPhase.DESCENT: 10,
-    }
+    phases: dict[FlightPhase, int] = field(
+        default_factory=lambda: {
+            FlightPhase.CLIMB: 10,
+            FlightPhase.CRUISE: 10,
+            FlightPhase.DESCENT: 10,
+        }
+    )
     """Flight phases and the number of points per phase to be simulated."""
 
     fuel_LHV: float = 43.8e6  # J/kg
