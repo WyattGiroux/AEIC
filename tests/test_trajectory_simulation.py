@@ -57,27 +57,32 @@ def test_trajectory_mass_iter():
     test_reltol = 1e-6
     test_maxiters = 1000
 
-    test_mis = Mission(origin='BOS',
-                   destination='LAX',
-                   departure = "2019-01-01T12:00:00",
-                   arrival = "2019-01-01T18:00:00",
-                   aircraft_type = "738",
-                   load_factor = 1.0)
+    test_mis = Mission(
+        origin='BOS',
+        destination='LAX',
+        departure="2019-01-01T12:00:00",
+        arrival="2019-01-01T18:00:00",
+        aircraft_type="738",
+        load_factor=1.0,
+    )
 
     perf = PerformanceModel(file_location('IO/default_config.toml'))
 
-    builder_wout_iter = tb.LegacyBuilder(
-        options=tb.Options(iterate_mass=False))
+    builder_wout_iter = tb.LegacyBuilder(options=tb.Options(iterate_mass=False))
 
     builder_with_iter = tb.LegacyBuilder(
-        options=tb.Options(iterate_mass=True,
-                           max_mass_iters=test_maxiters,
-                           mass_iter_reltol=test_reltol))
+        options=tb.Options(
+            iterate_mass=True,
+            max_mass_iters=test_maxiters,
+            mass_iter_reltol=test_reltol,
+        )
+    )
 
     builder_fail = tb.LegacyBuilder(
-        options=tb.Options(iterate_mass=True,
-                           max_mass_iters=1,
-                           mass_iter_reltol=test_reltol))
+        options=tb.Options(
+            iterate_mass=True, max_mass_iters=1, mass_iter_reltol=test_reltol
+        )
+    )
 
     traj_wout_iter = builder_wout_iter.fly(perf, test_mis)
     traj_with_iter = builder_with_iter.fly(perf, test_mis)
