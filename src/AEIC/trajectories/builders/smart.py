@@ -19,7 +19,7 @@ class SmartOptions:
     phases: dict[FlightPhase, int]
     """Flight phases and the number of points per phase to be simulated."""
 
-    fuel_LHV: float = 43.8e6 # J/kg
+    fuel_LHV: float = 43.8e6  # J/kg
     """Lower heating value of the fuel used."""
 
     climb_type: str = 'max_roc'
@@ -81,10 +81,10 @@ class SmartContext(Context):
         # initial altitude is origin altitude if so, otherwise clm_start_altitude
         phases = self.smart_options.phases
         takeoff_phases = [
-                            FlightPhase.IDLE_ORIGIN,
-                            FlightPhase.TAXI_ORIGIN,
-                            FlightPhase.TAKEOFF
-                        ]
+            FlightPhase.IDLE_ORIGIN,
+            FlightPhase.TAXI_ORIGIN,
+            FlightPhase.TAKEOFF,
+        ]
         if any([phase in self.phases for phase in takeoff_phases]):
             initial_altitude = mission.origin_position.altitude
         else:
