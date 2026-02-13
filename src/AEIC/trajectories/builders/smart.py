@@ -59,19 +59,17 @@ class SmartContext(Context):
             mission.origin_position.location, mission.destination_position.location
         )
 
-        # Climb defined as starting 3000' above airport.
-        self.clm_start_altitude = (
-            mission.origin_position.altitude + 3000.0 * FEET_TO_METERS
-        )
-
         # Maximum altitude in meters.
         max_alt: float = (
             ac_performance.model_info['General_Information']['max_alt_ft']
             * FEET_TO_METERS
         )
 
-        # If starting altitude is above operating ceiling, set start altitude
-        # to departure airport altitude.
+        # Climb defined as starting 3000' above departure airport. Clamp to aircraft
+        # operating ceiling if needed.
+        self.clm_start_altitude = (
+            mission.origin_position.altitude + 3000.0 * FEET_TO_METERS
+        )
         if self.clm_start_altitude >= max_alt:
             self.clm_start_altitude = mission.origin_position.altitude
 
