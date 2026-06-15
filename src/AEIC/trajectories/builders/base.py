@@ -250,9 +250,9 @@ class Builder(ABC):
             if abs(mass_res) < self.options.mass_iter_reltol:
                 mass_converged = True
             else:
-                # Perform a "dumb" correction of the starting mass.
-                self.starting_mass -= mass_res * self.total_fuel_mass
-                self.total_fuel_mass -= mass_res * self.total_fuel_mass
+                # Perform a correction of the starting mass based on the range equation.
+                self.starting_mass += mass_res * self.total_fuel_mass
+                self.total_fuel_mass += mass_res * self.total_fuel_mass
 
                 traj, mass_res = self._fly_iteration()
                 iter += 1
@@ -314,7 +314,10 @@ class Builder(ABC):
 
         # Calculate weight residual normalized by total_fuel_mass.
         fuelBurned = self.starting_mass - traj.aircraft_mass[-1]
-        mass_residual = (self.total_fuel_mass - fuelBurned) / self.total_fuel_mass
+        delta = fuelBurned / self.total_fuel_mass
+        lamda = self.total_fuel_mass / self.starting_mass
+
+        mass_residual = delta / (1 - lamda * (1 + delta))
 
         return traj, mass_residual
 
