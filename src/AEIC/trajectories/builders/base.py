@@ -349,18 +349,9 @@ class Builder(ABC):
             case MassIterMethod.NAIVE:
                 mass_residual = delta
             case MassIterMethod.RANGE_CORR:
-                mass_residual = (
-                    delta / (1 - lamda * (1 + delta)) * self.options.iter_relax
-                )
+                mass_residual = delta / (1 - lamda * (1 + delta))
             case MassIterMethod.AVERAGED:
-                mass_residual = (
-                    1
-                    / 2
-                    * (
-                        (delta / (1 - lamda * (1 + delta)) * self.options.iter_relax)
-                        + delta
-                    )
-                )
+                mass_residual = 0.5 * ((delta / (1 - lamda * (1 + delta))) + delta)
 
         return traj, mass_residual
 
