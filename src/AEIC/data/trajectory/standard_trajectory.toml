@@ -1,0 +1,66 @@
+# Trajectories are composed of individual segments which are each sorted into
+#classification as "climb," "cruise," or "descent." Below is the standard
+# trajectory definition
+
+# IMPORTANT: Descent is defined backwards chronologically. This to assist in finding
+# the intercept between cruise and descent.
+
+# Standard Notation:
+# > Variables:
+#   > cas: Calibrated airspeed (m/s)
+#   > tas: True airspeed (m/s)
+#   > ias: Indicated airspeed (m/s)
+#   > alt: altitude (m)
+#   > trans_alt: Mach transition altitude (m)
+#       Calculated as a_0 = u_0 / M_0 where a_0 is speed of sound as a function of
+#       altitude.
+#   > roc: Rate-of-climb/descent (m/s)
+#   > cd_grad: Climb gradient (-)
+        Calculated as the ratio of roc to ground speed
+# > String Codes:
+#   > CFR: Climb/descent rate as defined in the USA code of federal regulations report
+#          DOT/FAA/AR-05/8
+#   >
+
+[trajectory.climb]
+    [trajectory.climb.cas_climb]
+
+        # Climb from 3000' above airport to the altitude where either the Mach number
+        # is equal to the cruise Mach number or the altitude is the cruise altitude.
+
+        cas = 128.6 # 250 knots in m/s
+        roc = "CFR"
+
+        [trajectory.climb.cas_climb.end_conditions]
+            mach = "perf"
+            alt = "perf"
+
+    [trajectory.climb.mach_climb]
+
+        # Climb from the Mach transistion altitude to cruise altitude.
+
+        mach = "perf"
+        roc = "CFR" # Use climb rate defined in the US code of federal regulations
+                    # report DOT/FAA/AR-05/8
+
+        [trajectory.climb.mach_climb.end_conditions]
+            # Use "perf" to indicate the value should be taken from the performance model
+            alt = "perf"
+
+
+[trajectory.cruise]
+    [trajectory.cruise.alt_cruise]
+
+        # Cruise at constant altitude and Mach number
+
+        alt = "perf"
+        mach = "perf"
+
+        [trajectory.cruise.alt_cruise.end_conditions]
+            intersect = true
+
+
+[trajectory.descent]
+    [trajectory.descent.mach_descent]
+
+        # Descend at constant Mach number until the Mach transition altitude

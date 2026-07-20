@@ -4,6 +4,9 @@ performance_model = "performance/sample_performance_model.toml"
 # Engine database spreadsheet.
 engine_file = "engines/sample_edb.xlsx"
 
+# Standard trajectory definition
+trajectory = "trajectory/standard_trajectory.toml"
+
 
 [weather]
 

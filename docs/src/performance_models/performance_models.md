@@ -18,6 +18,7 @@ intended to be extensible to more complex use cases.
 ```{toctree}
 :maxdepth: 1
 
+minimum_requirements.md
 performance_model_api.md
 legacy_performance_model.md
 performance_model_files.md

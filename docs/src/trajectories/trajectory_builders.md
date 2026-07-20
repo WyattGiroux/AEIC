@@ -202,6 +202,19 @@ re-exported from {py:mod}`AEIC.trajectories.builders`. These option
 classes are placeholders; their fields and defaults will change as the
 corresponding builder is implemented.
 
+### Standard builder
+
+{py:class}`StandardBuilder <AEIC.trajectories.builders.standard.StandardBuilder>`
+will drive trajectory simulation for a standard AEIC user.
+Configured via
+{py:class}`StandardOptions <AEIC.trajectories.builders.standard.StandardOptions>`.
+
+```{eval-rst}
+.. WARNING::
+   This builder and its options class are stubs and cannot yet fly
+   trajectories end-to-end.
+```
+
 ### TASOPT builder
 
 {py:class}`TASOPTBuilder <AEIC.trajectories.builders.tasopt.TASOPTBuilder>`

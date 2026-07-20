@@ -21,4 +21,16 @@ vertical, speed) trajectories.
 trajectory_data.md
 trajectory_builders.md
 trajectory_stores.md
+constraining_ac_perf.md
 ```
+
+## Custom Vertical Trajectories
+```{eval-rst}
+.. WARNING::
+    Custom vertical trajectories are currently under active development and
+    should not be used.
+```
+AEIC defines the vertical trajectory path of an aircraft as a series of
+flight segments which each have:
+ * Two rules defining how the aircraft performs over that segment.
+ * End-conditions for that segment.
