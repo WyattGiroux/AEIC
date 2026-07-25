@@ -5,7 +5,7 @@
 # providing sample climb and descent rates used in fuel tank
 # Flammability analysis.
 #
-# The report can be found here: 
+# The report can be found here:
 # https://www.abbottaerospace.com/downloads/dot-faa-ar-05-8-fuel-tank-flammability-assessment-method-users-manual/
 
 [descent]

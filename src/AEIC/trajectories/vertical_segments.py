@@ -1,16 +1,12 @@
-import operator as op
 from enum import IntEnum, auto
 
 from AEIC.performance.models import BasePerformanceModel
-from AEIC.trajectories.trajectory import Trajectory
 
 
 class FlightSegment:
     def __init__(
-            self,
-            rules:dict[str, str|float],
-            end_conditions, exceptions=None
-        ) -> None:
+        self, rules: dict[str, str | float], end_conditions, exceptions=None
+    ) -> None:
         self.rules = rules
         self.end_conds = end_conditions
         self.exceptions = exceptions
@@ -95,15 +91,15 @@ class SegmentEnd(SegmentInterrupt):
     """Interrupt trigger primarily wrapping the NEXT behavior in the SegmentInterrupt.
     Provides a simplified framework for creating end conditions for segments.
     """
+
     def __init__(self):
         super().__init__()
 
 
-
 def parse_trajectory_segments(
-        raw_traj,
-        perf_model:BasePerformanceModel,
-    ) -> dict[str, list[FlightSegment]]:
+    raw_traj,
+    perf_model: BasePerformanceModel,
+) -> dict[str, list[FlightSegment]]:
     """Parser to take the toml version of a trajectory definition and convert it to
     ordered lists representing climb, cruise, and desccent.
 
