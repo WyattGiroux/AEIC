@@ -1,0 +1,46 @@
+# This is a toml implementation of Table 2 of DOT/FAA/AR-05/8,
+# also known as the Fuel Tank Flammability Assessment Method
+# User's Manual. This report is cited in the code of federal
+# regulations title 14 chapter 25 under section §N25.3 as
+# providing sample climb and descent rates used in fuel tank
+# Flammability analysis.
+#
+# The report can be found here: 
+# https://www.abbottaerospace.com/downloads/dot-faa-ar-05-8-fuel-tank-flammability-assessment-method-users-manual/
+
+[descent]
+rod_low = 2.54 # m/s (equal to 500 ft/min)
+rod_high = 12.7 # m/s (equal to 2500 ft/min)
+breakpoint_altitude = 1219.2 # m (equal to 4000 feet)
+
+[climb]
+cols = [
+  "climb_time",  # s - REQUIRED; OUTPUT COLUMN
+  "n_eng",  # Number of engines
+  "frac_max_range", # Fraction of the maximum airframe range being flown
+                    # Indicated as covering all values between n, n+1,
+                    # non-inclusive on the upper bound. If the max range
+                    # is being flown, just take value at n.
+]
+
+data = [
+    [1200.0, 2, 0.0],
+    [1200.0, 2, 0.2],
+    [1800.0, 2, 0.4],
+    [1800.0, 2, 0.6],
+    [2100.0, 2, 0.8],
+    [2100.0, 2, 1.0],
+    [1500.0, 3, 0.0],
+    [1800.0, 3, 0.2],
+    [2100.0, 3, 0.4],
+    [2100.0, 3, 0.6],
+    [2400.0, 3, 0.8],
+    [2400.0, 3, 1.0],
+    [1500.0, 4, 0.0],
+    [2100.0, 4, 0.2],
+    [2400.0, 4, 0.4],
+    [2400.0, 4, 0.6],
+    [2700.0, 4, 0.8],
+    [3000.0, 4, 1.0],
+
+]
