@@ -34,3 +34,4 @@ AEIC defines the vertical trajectory path of an aircraft as a series of
 flight segments which each have:
  * Two rules defining how the aircraft performs over that segment.
  * End-conditions for that segment.
+ * A list of conditions which, if met, trigger dynamic modification of the trajectory.
