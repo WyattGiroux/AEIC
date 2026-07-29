@@ -39,4 +39,4 @@ These are the fields that all performance models must share. Additional fields c
 ```
 
 ## Model-Specific Fields
-This section will vary from model to model and is where the actual performance data lives. While different performance models will store/parse data differently, in order to use the standard trajectory a model must provide a querying method that accepts altitude, mass, and two flight rules (stored as a dictionary with variable as key and value as entry) and returns a fuel flow rate.
+This section will vary from model to model and is where the actual performance data lives. While different performance models will store/parse data differently, in order to use the standard trajectory a model must provide a querying method that accepts altitude, mass, and two flight rules (ROC and TAS by default, stored as a dictionary with variable as key and value as entry) and returns a fuel flow rate.

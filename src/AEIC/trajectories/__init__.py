@@ -1,7 +1,7 @@
 from .ground_track import GroundTrack
+from .segments import FlightSegment
 from .store import TrajectoryStore
 from .trajectory import BASE_FIELDS, BASE_FIELDSET_NAME, Trajectory
-from .vertical_segments import FlightRule
 
 __all__ = [
     'BASE_FIELDSET_NAME',
@@ -9,5 +9,5 @@ __all__ = [
     'GroundTrack',
     'Trajectory',
     'TrajectoryStore',
-    'FlightRule',
+    'FlightSegment',
 ]
