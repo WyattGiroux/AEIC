@@ -19,19 +19,18 @@ class StandardContext(Context):
         mission: Mission,
         starting_mass: float | None,
     ):
-        raise NotImplementedError('DymosContext is not yet implemented.')
+        raise NotImplementedError('StandardContext is not yet implemented.')
 
 
 class StandardBuilder(Builder):
-    """Model for determining flight trajectories using ADS-B flight data. Can
-    be optimized using methods defined by Marek Travnik."""
+    """."""
 
     CONTEXT_CLASS = StandardContext
 
     def __init__(
         self,
         options: Options = Options(),
-        tasopt_options: StandardOptions = StandardOptions(),
+        standard_options: StandardOptions = StandardOptions(),
     ):
         raise NotImplementedError('StandardBuilder is not yet implemented.')
         super().__init__(options)

@@ -1,6 +1,9 @@
 from typing import Literal
 
-# from AEIC.trajectories.segments import cas_roc_climb
-
-
-allowed_segments = {Literal('legacy'): [Literal('cas_roc')]}
+ALLOWED_SEGMENTS = {
+    Literal('legacy'): [
+        Literal('bada_ptf_climb'),
+        Literal('bada_ptf_cruise'),
+        Literal('bada_ptf_descent'),
+    ]
+}
