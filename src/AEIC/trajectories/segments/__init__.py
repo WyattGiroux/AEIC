@@ -1,4 +1,4 @@
-from .flight_segment import FlightSegment, SegmentEnd, SegmentInterrupt
+from .segment_base import FlightSegment, SegmentEnd, SegmentInterrupt
 
 __all__ = [
     'FlightSegment',
