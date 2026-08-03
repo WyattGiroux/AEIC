@@ -64,3 +64,10 @@
     [trajectory.descent.mach_descent]
 
         # Descend at constant Mach number until the Mach transition altitude
+
+
+
+[climb]
+[climb.CAS_ROC_CLIMB]
+    cas = 132556
+    roc = 'ftfamum'
