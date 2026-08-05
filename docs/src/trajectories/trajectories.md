@@ -22,6 +22,7 @@ trajectory_data.md
 trajectory_builders.md
 trajectory_stores.md
 constraining_ac_perf.md
+standard_builder.md
 ```
 
 ## Custom Vertical Trajectories

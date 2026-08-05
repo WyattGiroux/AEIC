@@ -34,13 +34,15 @@ class FlightSegment(ABC):
         self.exceptions = exceptions
         self.run_backwards = False
 
-        # Check to make sure at least one NEXT code is present in any given segment
-        no_next = True
+        # Check to make sure at least one NEXT code is present in any given segment.
+        # Without one, it may be possible for the trajectory to throw an error due to
+        # exceeding step limits.
+        no_next_code = True
         for excep in self.exceptions:
             if excep.code is SegmentInterrupt.InterruptCode.NEXT:
-                no_next = False
+                no_next_code = False
 
-        if no_next:
+        if no_next_code:
             raise ValueError('Each segment must have a NEXT interrupt.')
 
     def __call__(
@@ -70,8 +72,10 @@ class FlightSegment(ABC):
             trigger, interrupt = self._check_interrupts(traj)
 
             if trigger:
+                # we can remove traj; its the same object being mutated
                 return traj, *interrupt
 
+            # traj.append(self._fly_step())
             traj = self._fly_step(traj, perf, is_backwards)
 
         raise RuntimeError(
@@ -91,7 +95,7 @@ class FlightSegment(ABC):
         perf: BasePerformanceModel,
         is_backwards: bool,
     ):
-        """Function to fly an individaul step of a mission; to be defined by individual
+        """Function to fly an individual step of a mission; to be defined by individual
         FlightSegment children.
         """
         ...
@@ -125,6 +129,7 @@ class SegmentInterrupt:
         oper (str): string of the binary operator used in the comparison oper(var,value)
     """
 
+    # Could replace with passing in op.xx directly; provide examples
     _ops = {
         '==': op.eq,
         '!=': op.ne,
@@ -134,6 +139,7 @@ class SegmentInterrupt:
         '>=': op.ge,
     }
 
+    # TODO: Can get rid of INSERT_NEXT; collapse to single INSERT
     class InterruptCode(IntEnum):
         """Prescribed interrupt actions.
 
@@ -206,7 +212,7 @@ class SegmentInterrupt:
         for the FlightSegment to perform final checks and return
         """
         match self.code:
-            case self.InterruptCode.INSERT | self.InterruptCode.INSERT_NEXT:
+            case self.InterruptCode.INSERT:
                 self.interrupt_return_data = self.insert_segments
             case self.InterruptCode.USER_DEFINED:
                 self.interrupt_return_data = self.user_method

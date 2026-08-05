@@ -7,3 +7,6 @@ ALLOWED_SEGMENTS = {
         Literal('bada_ptf_descent'),
     ]
 }
+
+# ALLOWED_INTERRUPTS will need to be added to ensure trajectory schedules are valid
+# before simulation begins.
