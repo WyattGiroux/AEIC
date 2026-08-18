@@ -1,53 +1,47 @@
 # Trajectories are composed of individual segments which are each sorted into
-#classification as "climb," "cruise," or "descent." Below is the standard
+# classification as "climb," "cruise," or "descent." Below is the standard
 # trajectory definition
 
 # IMPORTANT: Descent is defined backwards chronologically. This to assist in finding
 # the intercept between cruise and descent.
 
-
-
 [climb]
     [climb.CFR_ROCD_Const_Speed]
         cas = 128.6 # 250 knots in m/s
-        climb = true
+        roc_pos = true
 
+        # `end_alt` accepts either a string or float. The former searches the Builder for the prescribed
+        # variable using hasattr and getattr. The latter directly applies the value.
+        end_alt = 'crz_start_altitude'
 
+        [climb.CFR_ROCD_Const_Speed.interrupts]
+            test = true
+            # TBD: will include Mach = crz mach 'next' interrupt here
 
+    [climb.CFR_ROCD_Const_Mach]
+        mach = 'cruise_mach'
+        roc_pos = true
+        end_alt = 'crz_start_altitude'
 
-    [trajectory.climb.mach_climb]
+[cruise]
+    [cruise.Const_Alt_Const_Mach]
+        alt = 'crz_start_altitude'
+        mach = 'cruise_mach'
 
-        # Climb from the Mach transistion altitude to cruise altitude.
+        # The intersection with descent profile is checked on the builder level and is not included here.
 
-        mach = "perf"
-        roc = "CFR" # Use climb rate defined in the US code of federal regulations
-                    # report DOT/FAA/AR-05/8
+[descent]
+    # Descent, again, is defined backwards (going from end altitude to operating ceiling)
+    [descent.CFR_ROCD_Const_Speed]
+        cas = 128.6 # 250 knots in m/s
+        roc_pos = false
+        end_alt = 'maximum_altitude'
 
-        [trajectory.climb.mach_climb.end_conditions]
-            # Use "perf" to indicate the value should be taken from the performance model
-            alt = "perf"
+        [climb.CFR_ROCD_Const_Speed.interrupts]
+            test = true
+            # TBD: will include Mach = crz mach 'next' interrupt here
 
-
-[trajectory.cruise]
-    [trajectory.cruise.alt_cruise]
-
-        # Cruise at constant altitude and Mach number
-
-        alt = "perf"
-        mach = "perf"
-
-        [trajectory.cruise.alt_cruise.end_conditions]
-            intersect = true
-
-
-[trajectory.descent]
-    [trajectory.descent.mach_descent]
-
-        # Descend at constant Mach number until the Mach transition altitude
-
-
-
-[climb]
-[climb.CAS_ROC_CLIMB]
-    cas = 132556
-    roc = 'ftfamum'
+    [descent.CFR_ROCD_Const_Mach]
+        mach = 'cruise_mach'
+        roc_pos = false
+        end_alt = 'maximum_altitude'
