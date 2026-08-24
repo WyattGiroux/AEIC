@@ -1,18 +1,20 @@
 # TODO: Remove this when we migrate to Python 3.14+.
 from __future__ import annotations
 
-import operator as op
+# import operator as op
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import IntEnum, auto
 from typing import Any
 
-# from AEIC.performance.allowed_segments import ALLOWED_SEGMENTS, ALLOWED_INTERRUPTS
+from pydantic import PrivateAttr, model_validator
+
 from AEIC.performance.models import BasePerformanceModel
 from AEIC.trajectories.trajectory import Trajectory
+from AEIC.utils.models import CIBaseModel, CIStrEnum
 
 
-class FlightSegmentBase(ABC):
+class FlightSegmentBase(CIBaseModel, ABC):
     """Defines a segment of an aircraft's vertical trajectory given starting from a
     known point and traversing until one (or more) conditions are met as defined by the
     relevant `SegmentInterrupt` objects.
@@ -23,34 +25,22 @@ class FlightSegmentBase(ABC):
 
     Attributes:
         rules (list[FlightRule]): list of flight rules to be used
-        exceptions(list[SegmentInterrupt]): list of interrupt conditions
+        interrupts(list[SegmentInterrupt]): list of interrupt conditions
     """
 
-    def __init__(
-        self,
-        rules: list[FlightRule],
-        exceptions: list[SegmentInterruptBase] = None,
-    ) -> None:
-        self.rules = rules
-        self.exceptions = exceptions
-        self.run_backwards = False
+    interrupts: list[SegmentInterruptBase] = []
 
+    def validate_next_exists(self):
         # Check to make sure at least one NEXT code is present in any given segment.
         # Without one, it may be possible for the trajectory to throw an error due to
         # exceeding step limits.
         no_next_code = True
-        for excep in self.exceptions:
+        for excep in self.interrupts:
             if excep.code is SegmentInterruptBase.InterruptCode.NEXT:
                 no_next_code = False
 
         if no_next_code:
             raise ValueError('Each segment must have a NEXT interrupt.')
-
-    @property
-    @abstractmethod
-    def segment_type(self):
-        """String literal of segment type to be defined by specific segments."""
-        ...
 
     def __call__(
         self,
@@ -91,9 +81,9 @@ class FlightSegmentBase(ABC):
 
     def _check_interrupts(self, traj: Trajectory):
         """Check to see whether any interrupts have triggered."""
-        for excep in self.exceptions:
-            if excep.check_condition(traj):
-                return True, (excep.code, excep.interrupt_return_data)
+        for itp in self.interrupts:
+            if itp.check_condition(traj):
+                return True, (itp.code, itp.interrupt_return_data)
         return False, None
 
     @abstractmethod
@@ -108,24 +98,31 @@ class FlightSegmentBase(ABC):
         """
         ...
 
-    # def validate(self, perf: BasePerformanceModel):
-    # if perf.model_type
+    def validate(self, perf: BasePerformanceModel):
+        """Checks that the segment and all interrupts are compatible with the selected
+        performance model.
+
+        Note: import of ALLOWED_SEGMENTS / ALLOWED_INTERRUPTS is done locally here to
+        avoid a circular import at module import time between
+        AEIC.performance.allowed_segments and AEIC.trajectories.segments.
+        """
+        # Local import to avoid circular import during module initialization
+        from AEIC.performance.allowed_segments import (
+            ALLOWED_INTERRUPTS,
+            ALLOWED_SEGMENTS,
+        )
+
+        if type(self) not in ALLOWED_SEGMENTS[type(perf)]:
+            raise ValueError(f'Segment {type(self)} is not useable with {type(perf)}.')
+
+        for interrupt in self.interrupts:
+            if type(interrupt) not in ALLOWED_INTERRUPTS[type(perf)]:
+                raise ValueError(
+                    f'Interrupt {type(interrupt)} not useable with {type(perf)}.'
+                )
 
 
-# TODO: Should these be check for validity against the performance model or should the
-# segments (or both)?
-class FlightRule:
-    """Simple representation of a key value pair which can be evaluated against a
-    performance model. Standalone class for readability and to allow for validation
-    methods in the future.
-    """
-
-    def __init__(self, var: str, val: float):
-        self.var = var
-        self.val = val
-
-
-class SegmentInterruptBase:
+class SegmentInterruptBase(CIBaseModel):
     """Object for representing dynamic conditions on a segment of a flight which may
     modify or end the segment early. An example use case would be integrating dynamic
     step climbs in cruise:
@@ -139,16 +136,6 @@ class SegmentInterruptBase:
         value (float): value at which the interrupt is triggered
         oper (str): string of the binary operator used in the comparison oper(var,value)
     """
-
-    # Could replace with passing in op.xx directly; provide examples
-    _ops = {
-        '==': op.eq,
-        '!=': op.ne,
-        '<': op.lt,
-        '<=': op.le,
-        '>': op.gt,
-        '>=': op.ge,
-    }
 
     # TODO: Can get rid of INSERT_NEXT; collapse to single INSERT
     class InterruptCode(IntEnum):
@@ -168,42 +155,47 @@ class SegmentInterruptBase:
         INSERT = auto()
         USER_DEFINED = auto()
 
-    def __init__(
-        self,
-        var: str,
-        value: float,
-        oper: str,
-        code: InterruptCode = InterruptCode.NEXT,
-        insert_segments: list[FlightSegmentBase] | None = None,
-        user_method: Callable[..., Trajectory] | None = None,
-    ):
-        self.var = var
-        self.val = value
-        if oper not in self._ops:
-            raise KeyError(f'Invalid Operator: {oper}')
-        self.oper = self._ops[oper]
-        self.code = code
+    var: str
+    """Name of the tracked variable in the trajectory store."""
 
-        # These should only be defined (not None) if using INSERT, INSERT_NEXT, or
-        # USER_DEFINED codes
-        self.insert_segments = insert_segments
-        self.user_method = user_method
+    value: float | str
+    """Value of the value on which to trigger events."""
 
+    oper: Callable[[float, float], bool]
+    """Comparison operator between var and value, in that order."""
+
+    code: InterruptCode
+    """Interrupt code determining action to take on trigger."""
+
+    insert_segments: list[FlightSegmentBase] | None = None
+    """Segments to insert on a INSERT trigger."""
+
+    user_method: Callable[..., Trajectory] | None = None
+    """User-defined function to call on a USER_DEFINED trigger."""
+
+    _interrupt_return_data: Any | None = PrivateAttr()
+    """Private variable used to return information to a Segment when triggered."""
+
+    @model_validator(mode='after')
+    def setup(self):
         if self.insert_segments is not None and (
-            code is not self.InterruptCode.INSERT
-            or code is not self.InterruptCode.INSERT_NEXT
+            self.code is not self.InterruptCode.INSERT
+            or self.code is not self.InterruptCode.INSERT_NEXT
         ):
             raise ValueError(
                 'Interrupt code must be INSERT or INSERT_NEXT when passing in'
                 ' `insert_segments`.'
             )
-        if self.user_method is not None and code is not self.InterruptCode.USER_DEFINED:
+        if (
+            self.user_method is not None
+            and self.code is not self.InterruptCode.USER_DEFINED
+        ):
             raise ValueError(
                 'Interrupt code must be USER_METHOD when passing in `user_method`.'
             )
 
         # Set when the interrupt is triggered depending on the selected code
-        self.interrupt_return_data = None
+        self._interrupt_return_data = None
 
     def validate(self, traj: Trajectory):
         """Validate that a trajectory store is tracking the trigger variable."""
@@ -224,9 +216,9 @@ class SegmentInterruptBase:
         """
         match self.code:
             case self.InterruptCode.INSERT:
-                self.interrupt_return_data = self.insert_segments
+                self._interrupt_return_data = self.insert_segments
             case self.InterruptCode.USER_DEFINED:
-                self.interrupt_return_data = self.user_method
+                self._interrupt_return_data = self.user_method
             case _:
                 pass
         return True
@@ -238,5 +230,80 @@ class SegmentEnd(SegmentInterruptBase):
     for segments.
     """
 
-    def __init__(self, var: str, val: float, oper: str):
-        super().__init__(var, val, oper)
+    var: str
+    """Name of the tracked variable in the trajectory store."""
+
+    value: float | str
+    """Value of the value on which to trigger events."""
+
+    oper: Callable[[float, float], bool]
+    """Comparison operator between var and value, in that order."""
+
+    code: SegmentInterruptBase.InterruptCode = SegmentInterruptBase.InterruptCode.NEXT
+    """Interrupt code determining action to take on trigger."""
+
+    insert_segments: list[FlightSegmentBase] | None = None
+    """Segments to insert on a INSERT trigger."""
+
+    user_method: Callable[..., Trajectory] | None = None
+    """User-defined function to call on a USER_DEFINED trigger."""
+
+
+class ACOperationState(CIBaseModel):
+    altitude: float
+    """Altitude [m]."""
+
+    aircraft_mass: float
+    """Aircraft total mass [kg]."""
+
+    rules: list[FlightRule]
+    """Operating state control variables to be applied to a performance model. Can be
+    empty, length 1, or length 2, depending on what a performance model requires."""
+
+    @model_validator(mode='after')
+    def prevent_overdefined(self):
+        if len(self.rules) > 2:
+            raise ValueError('At most two ``rules`` can be specified.')
+
+
+class FlightRule:
+    """Standardized container format for passing aircraft operating rules to a
+    performance model.
+    """
+
+    control_var: ControlVar
+    """Control variable of interest"""
+
+    value: float
+    """Value of the control variable"""
+
+
+class ControlVar(CIStrEnum):
+    """Valid control variables to be passed as part of a FlightRule to a performance
+    model. All dimensions are assumed to be SI.
+
+    Attributes:
+        THROTTLE_PCT: Percent maximum throttle setting (%)
+        THROTTLE_FRAC: Fraction of maximum throttle
+        CAS: Calibrated airspeed (m/s)
+        TAS: True airspeed (m/s)
+        IAS: Indicated airspeed (m/s)
+        EAS: Effective airspeed (m/s)
+        ROCD: Rate of climb/descent (m/s)
+        GRADIENT: Climb/descent gradient (ROCD / Horizontal Speed)
+        FLIGHT_ANGLE: Angle of forward motion relative to the horizontal (degree)
+    """
+
+    # Engine controls
+    THROTTLE_PCT = 'throttle_pct'
+
+    # Airspeeds
+    CAS = 'cas'
+    TAS = 'tas'
+    IAS = 'ias'
+    EAS = 'eas'
+
+    # Yoke inputs
+    ROCD = 'rocd'
+    GRADIENT = 'gradient'
+    FLIGHT_ANGLE = 'flight_angle'

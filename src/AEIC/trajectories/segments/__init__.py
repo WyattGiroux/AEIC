@@ -1,3 +1,6 @@
+# TODO: Remove this when we migrate to Python 3.14+.
+from __future__ import annotations
+
 from typing import Annotated, Any
 
 from pydantic import Field, RootModel, model_validator
@@ -33,15 +36,25 @@ class FlightSegment(RootModel[SegmentUnion]):
         return data
 
     @classmethod
-    def load_from_dict(cls, seg_data: dict) -> SegmentUnion:
+    def load_from_dict(
+        cls, seg_data: dict, run_backwards: bool = False
+    ) -> SegmentUnion:
         """Load a FlightSegmentBase object from a trajectory sub-dictionary.
 
         The specific segment used is determiend by the ``segment_type`` field
         in the TOML data."""
+        seg_data['run_backwards'] = run_backwards
         return cls.model_validate(seg_data).root
 
 
+# Rebuild the FlightSegment RootModel to resolve forward references
+# caused by circular imports. SegmentInterruptBase and other related model
+# classes may be defined after FlightSegment is created, so Pydantic needs a
+# second pass to link them together.
+FlightSegment.model_rebuild()
+
 __all__ = [
+    'FlightSegment',
     'FlightSegmentBase',
     'SegmentInterruptBase',
     'SegmentEnd',

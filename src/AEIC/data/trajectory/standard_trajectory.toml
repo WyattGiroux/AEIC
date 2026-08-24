@@ -15,9 +15,8 @@
         # variable using hasattr and getattr. The latter directly applies the value.
         end_alt = 'crz_start_altitude'
 
-        [climb.cfr_rocd_const_cas.interrupts]
-            test = true
-            # TBD: will include Mach = crz mach 'next' interrupt here
+        #[climb.cfr_rocd_const_cas.interrupts]
+        #    TBD: will include Mach = crz mach 'next' interrupt here
 
     [climb.mach_climb]
         segment_type = 'cfr_rocd_const_mach'

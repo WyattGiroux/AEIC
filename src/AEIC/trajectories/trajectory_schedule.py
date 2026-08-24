@@ -1,3 +1,6 @@
+# TODO: Remove this when we migrate to Python 3.14+.
+from __future__ import annotations
+
 import tomllib
 from pathlib import Path
 
@@ -28,17 +31,17 @@ class TrajectorySchedule:
 
         if 'climb' not in data:
             raise KeyError("``climb`` must appear as a key in the root trajectory")
-        self.climb = [FlightSegment(seg) for seg in data['climb']]
+        self.climb = [FlightSegment(seg) for _, seg in data['climb'].items()]
 
         if 'cruise' not in data:
             raise KeyError("``cruise`` must appear as a key in the root trajectory")
-        self.cruise = [FlightSegment(seg) for seg in data['cruise']]
+        self.cruise = [FlightSegment(seg) for _, seg in data['cruise'].items()]
 
         if 'descent' not in data:
             raise KeyError("``descent`` must appear as a key in the root trajectory")
-        self.descent = [FlightSegment(seg) for seg in data['descent']]
+        self.descent = [FlightSegment(seg) for _, seg in data['descent'].items()]
 
-    def validate(self, perf: BasePerformanceModel) -> bool:
+    def validate(self, perf: BasePerformanceModel):
         """Check for compatability of all TrajectorySegments with the selected
         performance model
         """
@@ -46,7 +49,6 @@ class TrajectorySchedule:
         for phase in ['climb', 'cruise', 'descent']:
             if not self._validate_phase(perf, phase):
                 raise ValueError(f'{phase.upper()} segments failed to validate.')
-        return True
 
     def _validate_phase(self, perf: BasePerformanceModel, phase: str) -> bool:
         """Call validation on a specific phase. Return false if any segments fail."""
