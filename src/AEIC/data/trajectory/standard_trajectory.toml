@@ -6,7 +6,8 @@
 # the intercept between cruise and descent.
 
 [climb]
-    [climb.CFR_ROCD_Const_Speed]
+    [climb.initial_climb]
+        segment_type = 'cfr_rocd_const_cas'
         cas = 128.6 # 250 knots in m/s
         roc_pos = true
 
@@ -14,17 +15,19 @@
         # variable using hasattr and getattr. The latter directly applies the value.
         end_alt = 'crz_start_altitude'
 
-        [climb.CFR_ROCD_Const_Speed.interrupts]
+        [climb.cfr_rocd_const_cas.interrupts]
             test = true
             # TBD: will include Mach = crz mach 'next' interrupt here
 
-    [climb.CFR_ROCD_Const_Mach]
+    [climb.mach_climb]
+        segment_type = 'cfr_rocd_const_mach'
         mach = 'cruise_mach'
         roc_pos = true
         end_alt = 'crz_start_altitude'
 
 [cruise]
-    [cruise.Const_Alt_Const_Mach]
+    [cruise.main_cruise]
+        segment_type = 'const_alt_const_mach'
         alt = 'crz_start_altitude'
         mach = 'cruise_mach'
 
@@ -32,16 +35,18 @@
 
 [descent]
     # Descent, again, is defined backwards (going from end altitude to operating ceiling)
-    [descent.CFR_ROCD_Const_Speed]
+    [descent.final_descent]
+        segment_type = 'cfr_rocd_const_cas'
         cas = 128.6 # 250 knots in m/s
         roc_pos = false
         end_alt = 'maximum_altitude'
 
-        [climb.CFR_ROCD_Const_Speed.interrupts]
+        [climb.cfr_rocd_const_cas.interrupts]
             test = true
             # TBD: will include Mach = crz mach 'next' interrupt here
 
-    [descent.CFR_ROCD_Const_Mach]
+    [descent.mach_descent]
+        segment_type = 'cfr_rocd_const_mach'
         mach = 'cruise_mach'
         roc_pos = false
         end_alt = 'maximum_altitude'

@@ -1,4 +1,4 @@
-from AEIC.trajectories.segments.segment_base import SegmentEnd, SegmentInterrupt
+from AEIC.trajectories.segments.segment_base import SegmentEnd, SegmentInterruptBase
 
 
 class End_Altitude(SegmentEnd):
@@ -6,7 +6,7 @@ class End_Altitude(SegmentEnd):
         super().__init__(var='altitude', value=end_alt, oper='>=')
 
 
-class Min_CL_Step_Climb(SegmentInterrupt):
+class Min_CL_Step_Climb(SegmentInterruptBase):
     def __init__(self, min_cl, max_cl):
         # Use max_cl to define end condition for new_climb
         new_climb = ...
@@ -16,7 +16,7 @@ class Min_CL_Step_Climb(SegmentInterrupt):
             var='CL',
             value=min_cl,
             oper='<=',
-            code=SegmentInterrupt.InterruptCode.INSERT_NEXT,
+            code=SegmentInterruptBase.InterruptCode.INSERT_NEXT,
             insert_segments=[
                 new_climb,
                 new_cruise,

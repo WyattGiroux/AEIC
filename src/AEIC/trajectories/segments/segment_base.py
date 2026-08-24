@@ -11,7 +11,7 @@ from AEIC.performance.models import BasePerformanceModel
 from AEIC.trajectories.trajectory import Trajectory
 
 
-class FlightSegment(ABC):
+class FlightSegmentBase(ABC):
     """Defines a segment of an aircraft's vertical trajectory given starting from a
     known point and traversing until one (or more) conditions are met as defined by the
     relevant `SegmentInterrupt` objects.
@@ -28,7 +28,7 @@ class FlightSegment(ABC):
     def __init__(
         self,
         rules: list[FlightRule],
-        exceptions: list[SegmentInterrupt] = None,
+        exceptions: list[SegmentInterruptBase] = None,
     ) -> None:
         self.rules = rules
         self.exceptions = exceptions
@@ -39,7 +39,7 @@ class FlightSegment(ABC):
         # exceeding step limits.
         no_next_code = True
         for excep in self.exceptions:
-            if excep.code is SegmentInterrupt.InterruptCode.NEXT:
+            if excep.code is SegmentInterruptBase.InterruptCode.NEXT:
                 no_next_code = False
 
         if no_next_code:
@@ -51,7 +51,7 @@ class FlightSegment(ABC):
         perf: BasePerformanceModel,
         is_backwards: bool,
         step_lim: int = 1000,
-    ) -> tuple[Trajectory, SegmentInterrupt.InterruptCode, Any]:
+    ) -> tuple[Trajectory, SegmentInterruptBase.InterruptCode, Any]:
         """Runs the flight segment starting from idx -1 in the `traj` object. Runs until
         an interrupt is reached or a number of steps set by `step_lim` are taken. If the
         step limit is exceeded, the flight raises an error.
@@ -114,7 +114,7 @@ class FlightRule:
         self.val = val
 
 
-class SegmentInterrupt:
+class SegmentInterruptBase:
     """Object for representing dynamic conditions on a segment of a flight which may
     modify or end the segment early. An example use case would be integrating dynamic
     step climbs in cruise:
@@ -163,7 +163,7 @@ class SegmentInterrupt:
         value: float,
         oper: str,
         code: InterruptCode = InterruptCode.NEXT,
-        insert_segments: list[FlightSegment] | None = None,
+        insert_segments: list[FlightSegmentBase] | None = None,
         user_method: Callable[..., Trajectory] | None = None,
     ):
         self.var = var
@@ -221,7 +221,7 @@ class SegmentInterrupt:
         return True
 
 
-class SegmentEnd(SegmentInterrupt):
+class SegmentEnd(SegmentInterruptBase):
     """Interrupt trigger primarily wrapping the default NEXT behavior in the
     SegmentInterrupt. Provides a dedicated object for creating end conditions
     for segments.
