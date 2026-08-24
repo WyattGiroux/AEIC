@@ -7,6 +7,7 @@ from collections.abc import Callable
 from enum import IntEnum, auto
 from typing import Any
 
+# from AEIC.performance.allowed_segments import ALLOWED_SEGMENTS, ALLOWED_INTERRUPTS
 from AEIC.performance.models import BasePerformanceModel
 from AEIC.trajectories.trajectory import Trajectory
 
@@ -44,6 +45,12 @@ class FlightSegmentBase(ABC):
 
         if no_next_code:
             raise ValueError('Each segment must have a NEXT interrupt.')
+
+    @property
+    @abstractmethod
+    def segment_type(self):
+        """String literal of segment type to be defined by specific segments."""
+        ...
 
     def __call__(
         self,
@@ -91,6 +98,7 @@ class FlightSegmentBase(ABC):
 
     @abstractmethod
     def _fly_step(
+        self,
         traj: Trajectory,
         perf: BasePerformanceModel,
         is_backwards: bool,
@@ -99,6 +107,9 @@ class FlightSegmentBase(ABC):
         FlightSegment children.
         """
         ...
+
+    # def validate(self, perf: BasePerformanceModel):
+    # if perf.model_type
 
 
 # TODO: Should these be check for validity against the performance model or should the
