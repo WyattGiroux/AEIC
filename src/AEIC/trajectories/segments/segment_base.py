@@ -30,18 +30,6 @@ class FlightSegmentBase(CIBaseModel, ABC):
 
     interrupts: list[SegmentInterruptBase] = []
 
-    def validate_next_exists(self):
-        # Check to make sure at least one NEXT code is present in any given segment.
-        # Without one, it may be possible for the trajectory to throw an error due to
-        # exceeding step limits.
-        no_next_code = True
-        for excep in self.interrupts:
-            if excep.code is SegmentInterruptBase.InterruptCode.NEXT:
-                no_next_code = False
-
-        if no_next_code:
-            raise ValueError('Each segment must have a NEXT interrupt.')
-
     def __call__(
         self,
         traj: Trajectory,
@@ -137,21 +125,17 @@ class SegmentInterruptBase(CIBaseModel):
         oper (str): string of the binary operator used in the comparison oper(var,value)
     """
 
-    # TODO: Can get rid of INSERT_NEXT; collapse to single INSERT
     class InterruptCode(IntEnum):
         """Prescribed interrupt actions.
 
         Options:
             - NEXT: End current segment and move to next in list.
-            - INSERT_NEXT: End current segment and insert segments before the running
-                the next segment.
             - INSERT: Pause current segment and insert segments before returning to
                 paused segment
             - USER_DEFINED: Execute a user-defined method.
         """
 
         NEXT = auto()
-        INSERT_NEXT = auto()
         INSERT = auto()
         USER_DEFINED = auto()
 
@@ -177,10 +161,10 @@ class SegmentInterruptBase(CIBaseModel):
     """Private variable used to return information to a Segment when triggered."""
 
     @model_validator(mode='after')
-    def setup(self):
-        if self.insert_segments is not None and (
-            self.code is not self.InterruptCode.INSERT
-            or self.code is not self.InterruptCode.INSERT_NEXT
+    def validate_codes(self):
+        if (
+            self.insert_segments is not None
+            and self.code is not self.InterruptCode.INSERT
         ):
             raise ValueError(
                 'Interrupt code must be INSERT or INSERT_NEXT when passing in'
@@ -193,9 +177,7 @@ class SegmentInterruptBase(CIBaseModel):
             raise ValueError(
                 'Interrupt code must be USER_METHOD when passing in `user_method`.'
             )
-
-        # Set when the interrupt is triggered depending on the selected code
-        self._interrupt_return_data = None
+        return self
 
     def validate(self, traj: Trajectory):
         """Validate that a trajectory store is tracking the trigger variable."""
@@ -242,12 +224,6 @@ class SegmentEnd(SegmentInterruptBase):
     code: SegmentInterruptBase.InterruptCode = SegmentInterruptBase.InterruptCode.NEXT
     """Interrupt code determining action to take on trigger."""
 
-    insert_segments: list[FlightSegmentBase] | None = None
-    """Segments to insert on a INSERT trigger."""
-
-    user_method: Callable[..., Trajectory] | None = None
-    """User-defined function to call on a USER_DEFINED trigger."""
-
 
 class ACOperationState(CIBaseModel):
     altitude: float
@@ -283,7 +259,6 @@ class ControlVar(CIStrEnum):
     model. All dimensions are assumed to be SI.
 
     Attributes:
-        THROTTLE_PCT: Percent maximum throttle setting (%)
         THROTTLE_FRAC: Fraction of maximum throttle
         CAS: Calibrated airspeed (m/s)
         TAS: True airspeed (m/s)
@@ -295,7 +270,7 @@ class ControlVar(CIStrEnum):
     """
 
     # Engine controls
-    THROTTLE_PCT = 'throttle_pct'
+    THROTTLE_FRAC = 'throttle_frac'
 
     # Airspeeds
     CAS = 'cas'

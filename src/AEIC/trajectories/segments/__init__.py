@@ -31,19 +31,16 @@ class FlightSegment(RootModel[SegmentUnion]):
     @classmethod
     def normalize_segment_type(cls, data: Any) -> Any:
         """Ensure FlightSegementBase names passed are case-insensitive."""
-        if isinstance(data, dict):
+        if isinstance(data, dict) and 'segment_type' in data:
             data = {**data, 'segment_type': data['segment_type'].lower()}
         return data
 
     @classmethod
-    def load_from_dict(
-        cls, seg_data: dict, run_backwards: bool = False
-    ) -> SegmentUnion:
+    def load_from_dict(cls, seg_data: dict) -> SegmentUnion:
         """Load a FlightSegmentBase object from a trajectory sub-dictionary.
 
         The specific segment used is determiend by the ``segment_type`` field
         in the TOML data."""
-        seg_data['run_backwards'] = run_backwards
         return cls.model_validate(seg_data).root
 
 

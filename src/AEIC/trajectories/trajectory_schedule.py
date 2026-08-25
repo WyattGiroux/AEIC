@@ -31,15 +31,18 @@ class TrajectorySchedule:
 
         if 'climb' not in data:
             raise KeyError("``climb`` must appear as a key in the root trajectory")
-        self.climb = [FlightSegment(seg) for _, seg in data['climb'].items()]
+        self.climb = self.load_phase_from_dict(data, 'climb')
 
         if 'cruise' not in data:
             raise KeyError("``cruise`` must appear as a key in the root trajectory")
-        self.cruise = [FlightSegment(seg) for _, seg in data['cruise'].items()]
+        self.cruise = self.load_phase_from_dict(data, 'cruise')
 
         if 'descent' not in data:
             raise KeyError("``descent`` must appear as a key in the root trajectory")
-        self.descent = [FlightSegment(seg) for _, seg in data['descent'].items()]
+        self.descent = self.load_phase_from_dict(data, 'descent')
+
+    def load_phase_from_dict(self, data: dict, phase: str):
+        return [FlightSegment.load_from_dict(seg) for _, seg in data[phase].items()]
 
     def validate(self, perf: BasePerformanceModel):
         """Check for compatability of all TrajectorySegments with the selected

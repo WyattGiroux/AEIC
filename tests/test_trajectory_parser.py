@@ -1,13 +1,11 @@
-from typing import Literal
-
 from AEIC.config import config
 from AEIC.trajectories import TrajectorySchedule
-
-# from AEIC.trajectories.segments import (
-#     CFR_ROCD_Const_CAS,
-#     CFR_ROCD_Const_Mach,
-#     Const_Alt_Const_Mach,
-# )
+from AEIC.trajectories.segments import (
+    CFR_ROCD_Const_CAS,
+    CFR_ROCD_Const_Mach,
+    # Const_Alt_Const_Mach,
+    SegmentInterruptBase,
+)
 
 
 def test_vertical_traj_initialization():
@@ -17,16 +15,17 @@ def test_vertical_traj_initialization():
         config.file_location('trajectory/standard_trajectory.toml')
     )
 
-    # Ensure all phases are present
-    assert 'climb' in traj_schedule
-    assert 'cruise' in traj_schedule
-    assert 'descent' in traj_schedule
-
     # Make sure climb segments loaded correctly
-    clm = traj_schedule['climb']
+    clm = traj_schedule.climb
     assert len(clm) == 2
-    assert clm[0].segment_type == Literal['cfr_rocd_const_cas']
-    assert clm[1].segment_type == Literal['cfr_rocd_const_mach']
+    assert isinstance(clm[0], CFR_ROCD_Const_CAS)
+    assert isinstance(clm[1], CFR_ROCD_Const_Mach)
+
+    # Check that the end condition on altitude was automatically created
+    clm_interrupts = clm[0].interrupts
+    assert len(clm_interrupts) == 1
+    assert clm_interrupts[0].code == SegmentInterruptBase.InterruptCode.NEXT
+    assert clm_interrupts[0].var == 'altitude'
 
 
 def test_traj_schedule_validation_success():

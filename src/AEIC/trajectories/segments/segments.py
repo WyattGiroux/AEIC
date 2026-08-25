@@ -11,10 +11,6 @@ from AEIC.trajectories.segments.segment_base import (
     SegmentEnd,
 )
 
-# import AEIC.trajectories.segments as sd
-#
-# seg1 = sd.Max_ROCD_Const_Speed
-
 
 class CFR_ROCD_Const_CAS(FlightSegmentBase):
     segment_type: Literal['cfr_rocd_const_cas']
@@ -35,7 +31,7 @@ class CFR_ROCD_Const_CAS(FlightSegmentBase):
         self.interrupts.append(
             SegmentEnd(var='altitude', value=self.end_alt, oper=op.gt)
         )
-        self.validate_next_exists()
+        return self
 
     def _fly_step(self, traj, perf, is_backwards):
         pass
@@ -60,7 +56,7 @@ class CFR_ROCD_Const_Mach(FlightSegmentBase):
         self.interrupts.append(
             SegmentEnd(var='altitude', value=self.end_alt, oper=op.gt)
         )
-        self.validate_next_exists()
+        return self
 
     def _fly_step(self, traj, perf, is_backwards):
         pass
@@ -72,9 +68,3 @@ class Const_Alt_Const_Mach(FlightSegmentBase):
 
     def _fly_step(self, traj, perf, is_backwards):
         pass
-
-    @model_validator(mode='after')
-    def set_next(self):
-        # TODO this is a temporary "toy" interrupt for testing
-        self.interrupts.append(SegmentEnd(var='altitude', value=1, oper=op.gt))
-        self.validate_next_exists()
