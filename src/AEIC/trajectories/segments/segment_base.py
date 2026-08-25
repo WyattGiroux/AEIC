@@ -232,7 +232,7 @@ class ACOperationState(CIBaseModel):
     aircraft_mass: float
     """Aircraft total mass [kg]."""
 
-    rules: list[FlightRule]
+    rules: dict[ControlVar, float]
     """Operating state control variables to be applied to a performance model. Can be
     empty, length 1, or length 2, depending on what a performance model requires."""
 
@@ -240,18 +240,6 @@ class ACOperationState(CIBaseModel):
     def prevent_overdefined(self):
         if len(self.rules) > 2:
             raise ValueError('At most two ``rules`` can be specified.')
-
-
-class FlightRule:
-    """Standardized container format for passing aircraft operating rules to a
-    performance model.
-    """
-
-    control_var: ControlVar
-    """Control variable of interest"""
-
-    value: float
-    """Value of the control variable"""
 
 
 class ControlVar(CIStrEnum):

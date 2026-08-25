@@ -5,7 +5,13 @@ from typing import Annotated, Any
 
 from pydantic import Field, RootModel, model_validator
 
-from .segment_base import FlightSegmentBase, SegmentEnd, SegmentInterruptBase
+from .segment_base import (
+    ACOperationState,
+    ControlVar,
+    FlightSegmentBase,
+    SegmentEnd,
+    SegmentInterruptBase,
+)
 from .segments import (
     CFR_ROCD_Const_CAS,
     CFR_ROCD_Const_Mach,
@@ -51,6 +57,8 @@ class FlightSegment(RootModel[SegmentUnion]):
 FlightSegment.model_rebuild()
 
 __all__ = [
+    'ACOperationState',
+    'ControlVar',
     'FlightSegment',
     'FlightSegmentBase',
     'SegmentInterruptBase',
