@@ -27,7 +27,6 @@
 [cruise]
     [cruise.main_cruise]
         segment_type = 'const_alt_const_mach'
-        alt = 'crz_start_altitude'
         mach = 'cruise_mach'
 
         # The intersection with descent profile is checked on the builder level and is not included here.

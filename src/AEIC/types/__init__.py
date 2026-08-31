@@ -3,6 +3,7 @@ from numpy.typing import NDArray
 
 from AEIC.utils.models import CIStrEnum
 
+from .cfr_rocd import CFR_ROCD_Table
 from .fuel import Fuel
 from .spatial import Location, Position
 from .species import Species, SpeciesValues
@@ -29,4 +30,5 @@ __all__ = [
     'Species',
     'SpeciesValues',
     'TimeOfDay',
+    'CFR_ROCD_Table',
 ]

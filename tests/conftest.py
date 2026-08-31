@@ -8,6 +8,7 @@ from AEIC.config import Config, config
 from AEIC.missions import Mission
 from AEIC.performance.model_selector import SimplePerformanceModelSelector
 from AEIC.performance.models import PerformanceModel
+from AEIC.trajectories import TrajectorySchedule
 from AEIC.types import Fuel
 
 # Absolute path to test data directory.
@@ -123,6 +124,13 @@ def performance_model():
 def performance_model_selector():
     return SimplePerformanceModelSelector(
         config.file_location('performance/simple_selector')
+    )
+
+
+@pytest.fixture
+def trajectory_schedule():
+    return TrajectorySchedule(
+        config.file_location('trajectory/standard_trajectory.toml')
     )
 
 

@@ -29,6 +29,7 @@ class FlightSegmentBase(CIBaseModel, ABC):
     """
 
     interrupts: list[SegmentInterruptBase] = []
+    flight_rules: dict[ControlVar, float] = {}
 
     def __call__(
         self,
@@ -86,28 +87,12 @@ class FlightSegmentBase(CIBaseModel, ABC):
         """
         ...
 
-    def validate(self, perf: BasePerformanceModel):
-        """Checks that the segment and all interrupts are compatible with the selected
-        performance model.
-
-        Note: import of ALLOWED_SEGMENTS / ALLOWED_INTERRUPTS is done locally here to
-        avoid a circular import at module import time between
-        AEIC.performance.allowed_segments and AEIC.trajectories.segments.
-        """
-        # Local import to avoid circular import during module initialization
-        from AEIC.performance.allowed_segments import (
-            ALLOWED_INTERRUPTS,
-            ALLOWED_SEGMENTS,
-        )
-
-        if type(self) not in ALLOWED_SEGMENTS[type(perf)]:
-            raise ValueError(f'Segment {type(self)} is not useable with {type(perf)}.')
-
-        for interrupt in self.interrupts:
-            if type(interrupt) not in ALLOWED_INTERRUPTS[type(perf)]:
-                raise ValueError(
-                    f'Interrupt {type(interrupt)} not useable with {type(perf)}.'
-                )
+    @abstractmethod
+    def preexecute(self, *args, **kwargs):
+        """Segments may have custom behaviors which require setup before the main
+        ``fly_iteration`` call. This can be defined in concrete implementation of
+        particular segments."""
+        ...
 
 
 class SegmentInterruptBase(CIBaseModel):
@@ -252,6 +237,7 @@ class ControlVar(CIStrEnum):
         TAS: True airspeed (m/s)
         IAS: Indicated airspeed (m/s)
         EAS: Effective airspeed (m/s)
+        MACH: Mach number
         ROCD: Rate of climb/descent (m/s)
         GRADIENT: Climb/descent gradient (ROCD / Horizontal Speed)
         FLIGHT_ANGLE: Angle of forward motion relative to the horizontal (degree)
@@ -265,6 +251,7 @@ class ControlVar(CIStrEnum):
     TAS = 'tas'
     IAS = 'ias'
     EAS = 'eas'
+    MACH = 'mach'
 
     # Yoke inputs
     ROCD = 'rocd'

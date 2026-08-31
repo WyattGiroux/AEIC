@@ -8,29 +8,21 @@ a user-provided performance model must at minimum have the following fields:
 These are the fields that all performance models must share. Additional fields can be provided in addition to these, but all the following fields **must** be present when using the {py:class}`StandardBuilder <AEIC.trajectories.builders.standard.StandardBuilder>`.
 
 ### Metadata
-
- * `aircraft_name` identifies the aircraft being modeled. Prefer short codes
+ * `model_degree` (`int`) is the number of flight rules (e.g. CAS = 250 kt) supported by the model. Minimum is 0 (e.g. BADA `.ptf` file), maximum is 2 (e.g. TASOPT).
+ * `aircraft_name` (`str`) identifies the aircraft being modeled. Prefer short codes
    (e.g. `"B738"`)
- * `aircraft_class` is a rough grouping of size/use case. Can be `narrow`, `wide`,
+ * `aircraft_class` (`str`) is a rough grouping of size/use case. Can be `narrow`, `wide`,
    `small`, or `freight`.
- * `ISA_offset` is the temperature offset (in K) used when calculating standard atmospheric
+ * `ISA_offset` (`float`) is the temperature offset (in K) used when calculating standard atmospheric
    properties.
- * `maximum_altitude_ft` is the service ceiling of the aircraft in feet.
- * `maximum_payload_kg` is the maximum payload of the aircraft in kilograms.
- * `number_of_engines` is the number of engines.
- * `APU_name` is the name of the auxilliary power unit. If set to `None`, APU emissions
+ * `maximum_altitude_ft` (`float`) is the service ceiling of the aircraft in feet.
+ * `maximum_payload_kg` (`float`) is the maximum payload of the aircraft in kilograms.
+ * `number_of_engines` (`int`) is the number of engines.
+ * `APU_name` (`str`) is the name of the auxilliary power unit. If set to `None`, APU emissions
    will not be calculated.
- * `max_range_km` is the maximum range of the aircraft in kilometers.
-
-### Speeds
-
+ * `max_range_km` (`float`) is the maximum range of the aircraft in kilometers.
  * `cruise_mach` is the average cruise Mach number (typically in the 0.78-0.85 range).
-
-### Landing/Takeoff Emissions Data
-
  * `source` is the source of LTO emissions data. Can be `"EDB"` or `"self"`.
-
-#### `EDB` Fields
  * `ICAO_UID`: the unique identifier of the engine in the EASA Engine Emisisons Databank.
 
 ```{eval-rst}
@@ -38,5 +30,10 @@ These are the fields that all performance models must share. Additional fields c
     Currently only specifications for the EDB LTO data fields are provided here. If you wish to manually input the data, follow the format used by :code:`AEIC.data.performance.sample_performance_model.toml`
 ```
 
-## Model-Specific Fields
-This section will vary from model to model and is where the actual performance data lives. While different performance models will store/parse data differently, in order to use the standard trajectory a model must provide a querying method that accepts altitude, mass, and two flight rules (ROC and TAS by default, stored as a dictionary with variable as key and value as entry) and returns a fuel flow rate.
+## Performance Evaluation
+Whether or not the model is tabulated or functional, every performance model must have an `evaluate` method:
+
+```{eval-rst}
+.. autofunction:: AEIC.performance.models.BasePerformanceModel
+   :members:
+```

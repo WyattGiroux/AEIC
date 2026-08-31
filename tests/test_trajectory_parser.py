@@ -1,4 +1,8 @@
+import pytest
+
 from AEIC.config import config
+from AEIC.performance.allowed_segments import validate_trajectory_schedule
+from AEIC.performance.models import LegacyPerformanceModel, TASOPTPerformanceModel
 from AEIC.trajectories import TrajectorySchedule
 from AEIC.trajectories.segments import (
     CFR_ROCD_Const_CAS,
@@ -28,6 +32,12 @@ def test_vertical_traj_initialization():
     assert clm_interrupts[0].var == 'altitude'
 
 
-def test_traj_schedule_validation_success():
+def test_traj_schedule_validation(trajectory_schedule):
     """Successful loading and validation of the schedule"""
-    pass
+    validate_trajectory_schedule(trajectory_schedule, TASOPTPerformanceModel)
+
+
+def test_traj_schedule_validation_fail(trajectory_schedule):
+    """Successful loading and validation of the schedule"""
+    with pytest.raises(ValueError):
+        validate_trajectory_schedule(trajectory_schedule, LegacyPerformanceModel)
