@@ -262,6 +262,34 @@ class AdjustableLegacyBuilder(Builder):
 
         self.fuel_LHV = legacy_options.fuel_LHV
 
+    def fly_iteration(self) -> tuple[Trajectory, float]:
+        """Run a single flight iteration. In non-weight-iterating mode, only
+        runs once.
+
+        Returns:
+            (float) Difference in fuel burned and calculated required fuel
+                mass.
+        """
+
+        self.current_mass = self.starting_mass
+
+        # Set up extensible trajectory. We give the trajectory a name to
+        # identify it in `TrajectoryStore`s and intermediate NetCDF files.
+        traj = Trajectory(name=self.mission.label)
+
+        # Fly the flight segments in order (normally just climb, cruise,
+        # descent phases).
+        for phase in FlightPhase:
+            if hasattr(self, phase.method_name):
+                getattr(self, phase.method_name)(traj)
+        traj.fix()
+
+        # Calculate weight residual normalized by total_fuel_mass.
+        fuelBurned = self.starting_mass - traj.aircraft_mass[-1]
+        mass_residual = (self.total_fuel_mass - fuelBurned) / self.total_fuel_mass
+
+        return traj, mass_residual
+
     def calc_starting_mass(self) -> float:
         """Calculates the starting mass using AEIC v2 methods.
         Sets both starting mass and non-reserve/hold/divert fuel mass."""

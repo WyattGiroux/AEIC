@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from AEIC.missions import Mission
 from AEIC.performance.model_selector import PerformanceModelSelector
 from AEIC.performance.models import BasePerformanceModel
-from AEIC.storage import Container, FlightPhase
+from AEIC.storage import Container
 from AEIC.units import METERS_TO_FL
 
 from ..ground_track import GroundTrack
@@ -210,7 +210,7 @@ class Builder(ABC):
             else:
                 # Otherwise, just fly a single iteration with the given starting
                 # mass.
-                traj, _ = self._fly_iteration()
+                traj, _ = self.fly_iteration()
 
             # If everything was OK, we return the filled-in trajectory here,
             # setting up metadata variables before we do.
@@ -243,7 +243,7 @@ class Builder(ABC):
         """Iterate on starting mass to minimize residual fuel mass."""
         mass_converged = False
         iter = 1
-        traj, mass_res = self._fly_iteration()
+        traj, mass_res = self.fly_iteration()
         while not mass_converged and iter < self.options.max_mass_iters:
             # Keep the calculated trajectory if the mass is sufficiently
             # small.
@@ -290,7 +290,8 @@ class Builder(ABC):
 
         return pt
 
-    def _fly_iteration(self) -> tuple[Trajectory, float]:
+    @abstractmethod
+    def fly_iteration(self) -> tuple[Trajectory, float]:
         """Run a single flight iteration. In non-weight-iterating mode, only
         runs once.
 
@@ -298,25 +299,7 @@ class Builder(ABC):
             (float) Difference in fuel burned and calculated required fuel
                 mass.
         """
-
-        self.current_mass = self.starting_mass
-
-        # Set up extensible trajectory. We give the trajectory a name to
-        # identify it in `TrajectoryStore`s and intermediate NetCDF files.
-        traj = Trajectory(name=self.mission.label)
-
-        # Fly the flight segments in order (normally just climb, cruise,
-        # descent phases).
-        for phase in FlightPhase:
-            if hasattr(self, phase.method_name):
-                getattr(self, phase.method_name)(traj)
-        traj.fix()
-
-        # Calculate weight residual normalized by total_fuel_mass.
-        fuelBurned = self.starting_mass - traj.aircraft_mass[-1]
-        mass_residual = (self.total_fuel_mass - fuelBurned) / self.total_fuel_mass
-
-        return traj, mass_residual
+        ...
 
     @abstractmethod
     def calc_starting_mass(self) -> float:
