@@ -31,13 +31,13 @@ class FlightSegmentBase(CIBaseModel, ABC):
     interrupts: list[SegmentInterruptBase] = []
     flight_rules: dict[ControlVar, float] = {}
 
-    def __call__(
+    def run(
         self,
         traj: Trajectory,
         perf: BasePerformanceModel,
         is_backwards: bool,
         step_lim: int = 1000,
-    ) -> tuple[Trajectory, SegmentInterruptBase.InterruptCode, Any]:
+    ) -> tuple[SegmentInterruptBase.InterruptCode, Any]:
         """Runs the flight segment starting from idx -1 in the `traj` object. Runs until
         an interrupt is reached or a number of steps set by `step_lim` are taken. If the
         step limit is exceeded, the flight raises an error.
@@ -58,11 +58,10 @@ class FlightSegmentBase(CIBaseModel, ABC):
             trigger, interrupt = self._check_interrupts(traj)
 
             if trigger:
-                # we can remove traj; its the same object being mutated
-                return traj, *interrupt
+                return interrupt
 
             # traj.append(self._fly_step())
-            traj = self._fly_step(traj, perf, is_backwards)
+            self._fly_step(traj, perf, is_backwards)
 
         raise RuntimeError(
             f'Segment failed to run in {step_lim} steps; aborting flight.'
@@ -175,6 +174,7 @@ class SegmentInterruptBase(CIBaseModel):
         newest_value = getattr(traj, self.var)[-1]
         if self.oper(newest_value, self.val):
             self._trigger()
+            return True
         return False
 
     def _trigger(self):
@@ -188,7 +188,6 @@ class SegmentInterruptBase(CIBaseModel):
                 self._interrupt_return_data = self.user_method
             case _:
                 pass
-        return True
 
 
 class SegmentEnd(SegmentInterruptBase):

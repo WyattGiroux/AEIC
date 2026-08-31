@@ -1,7 +1,9 @@
 # TODO: Remove this when we move to Python 3.14+.
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Callable
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -15,6 +17,7 @@ from AEIC.units import (
 from AEIC.weather import Weather
 
 from .. import GroundTrack, Trajectory, TrajectorySchedule
+from ..segments import FlightSegmentBase, SegmentInterruptBase
 from .base import Builder, Context, Options
 
 
@@ -30,6 +33,9 @@ class StandardOptions:
 
     fuel_LHV: float = 43.8e6
     """Lower heating value of the fuel used (J/kg)."""
+
+    segment_iteration_limit: int = 1000
+    """Maximum number of iterations that a segment can take."""
 
 
 class StandardContext(Context):
@@ -104,6 +110,9 @@ class StandardContext(Context):
         """
         # raise NotImplementedError('StandardContext is not yet implemented.')
 
+        # TODO: Need trajectory_schedule validation vs. performannce
+        # TODO: Need conversion of variable names to floats in TrajectorySchedule
+
         ground_track = GroundTrack.great_circle(
             mission.origin_position.location,
             mission.destination_position.location,
@@ -177,6 +186,8 @@ class StandardContext(Context):
         self.divert_distance = divert_distance
         self.hold_time = hold_time
 
+        self.trajectory_schedule = trajectory_schedule
+
         # Pass information to base context class constructor.
         super().__init__(
             builder,
@@ -224,7 +235,77 @@ class StandardBuilder(Builder):
 
         self.fuel_LHV = standard_options.fuel_LHV
 
-    def fly_iteration(self) -> tuple[Trajectory, float]: ...
+        self.segment_iteration_limit = standard_options.segment_iteration_limit
+
+    def fly_iteration(self) -> tuple[Trajectory, float]:
+        """Run a single flight iteration. In non-weight-iterating mode, only
+        runs once.
+
+        Returns:
+            (float) Difference in fuel burned and calculated required fuel
+                mass.
+        """
+        self.current_mass = self.starting_mass
+
+        # Set up two extensible trajectories - one for the forward problem and one for
+        # the backward problem. The forward trajectory is assumed to be the primary one.
+        traj_forward = Trajectory(name=self.mission.label)
+        traj_backward = Trajectory(name=self.mission.label + '_backward')
+
+        # Descent must be run first to establish the descent profile to be intersected.
+        descent_base = deque(deepcopy(self.trajectory_schedule.descent))
+        self.fly_phase(
+            traj=traj_backward, segment_stack=descent_base, is_backwards=True
+        )
+
+        # Climb and cruise must be run in a separate detection loop monitoring whether
+        # forward trajectory has crossed the descent profile.
+        while not self.descent_intersected(traj_forward, traj_backward):
+            ...
+
+    def descent_intersected(
+        self, traj_forward: Trajectory, traj_backward: Trajectory
+    ) -> bool:
+        """Function to check whether traj_forward has crossed the profile defined by
+        traj_backward."""
+        ...
+
+    def fly_phase(self, traj: Trajectory, segment_stack: deque, is_backwards: bool):
+        """Runs each segment in the segment_stack in order (left to right), popping
+        entries until the queue is empty. Limits on the iteration number are placed on
+        the segment level (i.e. if a segment fails to interrupt within the limiting
+        number of steps, an error is raised.)
+        """
+        while segment_stack:
+            cur_segment = segment_stack.popleft()
+
+            # Run the segment, returning the interrupt code and relevant data
+            interrupt_code, interrupt_data = cur_segment.run(
+                traj=traj,
+                perf=self.ac_performance,
+                is_backwards=is_backwards,
+                step_lim=self.segment_iteration_limit,
+            )
+
+            # Determine next course of action based on the returned code
+            match interrupt_code:
+                case SegmentInterruptBase.InterruptCode.NEXT:
+                    # Move to the next segment without further action
+                    pass
+                case SegmentInterruptBase.InterruptCode.INSERT:
+                    # Insert segments at the left of the deque
+                    if not isinstance(interrupt_data, list[FlightSegmentBase]):
+                        raise ValueError(
+                            'When interrupting with INSERT, '
+                            '``interrupt_data`` must be of type '
+                            '``list[FlightSegmentBase]``; instead got '
+                            f'{type(interrupt_data)}'
+                        )
+                    segment_stack.extendleft(interrupt_data)
+                case SegmentInterruptBase.InterruptCode.USER_DEFINED:
+                    raise ValueError('``USER_DEFINED`` behavior is not yet supported.')
+                case _:
+                    raise ValueError(f'Unrecognized interrupt code: {interrupt_code}')
 
     def calc_starting_mass(self) -> float: ...
 
