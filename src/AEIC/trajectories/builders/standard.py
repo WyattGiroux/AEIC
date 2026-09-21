@@ -258,8 +258,7 @@ class StandardBuilder(Builder):
             traj=traj_backward, segment_stack=descent_base, is_backwards=True
         )
 
-        # Climb and cruise must be run in a separate detection loop monitoring whether
-        # forward trajectory has crossed the descent profile.
+        # The DescentIntersect interrupt is added to each segment
         while not self.descent_intersected(traj_forward, traj_backward):
             ...
 
@@ -270,7 +269,13 @@ class StandardBuilder(Builder):
         traj_backward."""
         ...
 
-    def fly_phase(self, traj: Trajectory, segment_stack: deque, is_backwards: bool):
+    def fly_phase(
+        self,
+        traj: Trajectory,
+        segment_stack: deque,
+        is_backwards: bool,
+        descent_profile: Trajectory | None,
+    ):
         """Runs each segment in the segment_stack in order (left to right), popping
         entries until the queue is empty. Limits on the iteration number are placed on
         the segment level (i.e. if a segment fails to interrupt within the limiting

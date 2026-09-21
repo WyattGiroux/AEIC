@@ -23,6 +23,7 @@ from AEIC.utils.models import CIBaseModel
 
 if TYPE_CHECKING:
     from AEIC.performance.types import AircraftState, Performance
+    from AEIC.trajectories.segments import ACOperationState
 
 
 class LTOModeDataInput(CIBaseModel):
@@ -198,7 +199,9 @@ class BasePerformanceModel[RulesT](CIBaseModel, ABC):
             raise ValueError('LTO performance data not available.')
         return self.lto_performance.convert()
 
-    def evaluate(self, state: AircraftState, rules: RulesT) -> Performance:
+    def evaluate(
+        self, state: AircraftState | ACOperationState, rules: RulesT | None
+    ) -> Performance:
         """Evaluate aircraft performance based on the given state and flight
         rules.
 

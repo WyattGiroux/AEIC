@@ -9,14 +9,19 @@ from typing import Literal
 from pydantic import model_validator
 
 from AEIC.config import config
+from AEIC.missions import Mission
 from AEIC.performance.models import BasePerformanceModel
 from AEIC.trajectories.segments.segment_base import (
+    ACOperationState,
     ControlVar,
     FlightSegmentBase,
     SegmentEnd,
 )
 from AEIC.trajectories.trajectory import Trajectory
 from AEIC.types import CFR_ROCD_Table
+from AEIC.weather import Weather
+
+from .. import GroundTrack
 
 
 class CFR_ROCD_Const_CAS(FlightSegmentBase):
@@ -70,7 +75,14 @@ class CFR_ROCD_Const_CAS(FlightSegmentBase):
         self.flight_rules[ControlVar.CAS] = self.cas
 
     def _fly_step(
-        self, traj: Trajectory, perf: BasePerformanceModel, is_backwards: bool
+        self,
+        traj: Trajectory,
+        ac_performance: BasePerformanceModel,
+        ground_track: GroundTrack,
+        step_size: float,
+        is_backwards: bool,
+        weather: Weather | None,
+        mission: Mission,
     ):
         pass
 
@@ -127,7 +139,16 @@ class CFR_ROCD_Const_Mach(FlightSegmentBase):
             )
         self.flight_rules[ControlVar.MACH] = self.mach
 
-    def _fly_step(self, traj, perf, is_backwards):
+    def _fly_step(
+        self,
+        traj: Trajectory,
+        ac_performance: BasePerformanceModel,
+        ground_track: GroundTrack,
+        step_size: float,
+        is_backwards: bool,
+        weather: Weather | None,
+        mission: Mission,
+    ):
         pass
 
 
@@ -138,8 +159,49 @@ class Const_Alt_Const_Mach(FlightSegmentBase):
     mach: float | str
     """Mach number of the aircraft."""
 
-    def _fly_step(self, traj, perf, is_backwards):
-        pass
+    def _fly_step(
+        self,
+        traj: Trajectory,
+        ac_performance: BasePerformanceModel,
+        ground_track: GroundTrack,
+        step_size: float,
+        is_backwards: bool,
+        weather: Weather | None,
+        mission: Mission,
+    ):
+        pt = traj.make_point(-1)
+        alt = pt.altitude
+        roc = 0  # By definition of constant altitude
+        mass = pt.aircraft_mass
+
+        # Take defined distance steps in cruise
+        distance = pt.ground_distance + step_size
+
+        state = ACOperationState(
+            altitude=alt,
+            aircraft_mass=mass,
+            rules={
+                ControlVar.ROCD: roc,
+                ControlVar.MACH: self.mach,
+            },
+        )
+
+        # Obtain the current performance of the aircraft
+        perf = ac_performance.evaluate(
+            state=state,
+            rules=None,  # Leftover from legacy implementation
+        )
+
+        self._update_distance_step(
+            traj=traj,
+            pt=pt,
+            distance=distance,
+            perf=perf,
+            ground_track=ground_track,
+            is_backwards=is_backwards,
+            weather=weather,
+            mission=mission,
+        )
 
     def preexecute(
         self,

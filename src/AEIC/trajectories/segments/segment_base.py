@@ -9,9 +9,15 @@ from typing import Any
 
 from pydantic import PrivateAttr, model_validator
 
+from AEIC.missions import Mission
 from AEIC.performance.models import BasePerformanceModel
+from AEIC.performance.types import Performance
+from AEIC.storage import Container
 from AEIC.trajectories.trajectory import Trajectory
 from AEIC.utils.models import CIBaseModel, CIStrEnum
+from AEIC.weather import Weather
+
+from .. import GroundTrack
 
 
 class FlightSegmentBase(CIBaseModel, ABC):
@@ -37,6 +43,8 @@ class FlightSegmentBase(CIBaseModel, ABC):
         perf: BasePerformanceModel,
         is_backwards: bool,
         step_lim: int = 1000,
+        weather: Weather | None = None,
+        **kwargs,
     ) -> tuple[SegmentInterruptBase.InterruptCode, Any]:
         """Runs the flight segment starting from idx -1 in the `traj` object. Runs until
         an interrupt is reached or a number of steps set by `step_lim` are taken. If the
@@ -74,12 +82,87 @@ class FlightSegmentBase(CIBaseModel, ABC):
                 return True, (itp.code, itp.interrupt_return_data)
         return False, None
 
+    def _update_altitude_step(
+        self,
+        traj: Trajectory,
+        pt: Container,
+        new_alt: float,
+        perf: Performance,
+        ground_track: GroundTrack,
+        is_backwards: bool,
+        weather: Weather | None,
+        mission: Mission,
+    ):
+        pass
+
+    def _update_distance_step(
+        self,
+        traj: Trajectory,
+        pt: Container,
+        distance: float,
+        perf: Performance,
+        ground_track: GroundTrack,
+        is_backwards: bool,
+        weather: Weather | None,
+        mission: Mission,
+    ):
+        if weather is not None:
+            track_vector = weather.get_track_vector(
+                time=mission.departure,
+                gt_point=ground_track.location(distance),
+                altitude=pt.altitude,
+                horizontal_airspeed=perf.true_airspeed,
+                track_azimuth=pt.azimuth,
+            )
+            pt.ground_speed, pt.heading = (
+                track_vector.ground_speed,
+                track_vector.heading,
+            )
+        else:
+            pt.ground_speed = perf.true_airspeed
+            pt.heading = pt.azimuth
+
+        # Take step along great circle route.
+        gpt = ground_track.location(distance)
+        pt.longitude = gpt.location.longitude
+        pt.latitude = gpt.location.latitude
+        pt.azimuth = gpt.azimuth
+
+        if is_backwards:
+            raise ValueError(
+                f'{self.__repr_name__} does not currently support backwards evaluation.'
+            )
+        else:
+            # Calculate time required to fly the segment.
+            ground_distance_step = distance - pt.ground_distance
+            pt.ground_distance = distance
+            seg_time = ground_distance_step / pt.ground_speed
+
+            # Calculate fuel burn in [kg] over the segment.
+            seg_fuel = perf.fuel_flow * seg_time
+
+            # Set aircraft state values.
+            pt.fuel_mass -= seg_fuel
+            pt.aircraft_mass -= seg_fuel
+            pt.flight_time += seg_time
+
+            # Store performance data for point at beginning of this step.
+            traj.true_airspeed[-1] = perf.true_airspeed
+            traj.rate_of_climb[-1] = perf.rate_of_climb
+            traj.fuel_flow[-1] = perf.fuel_flow
+
+            traj.append(pt)
+
     @abstractmethod
     def _fly_step(
         self,
         traj: Trajectory,
-        perf: BasePerformanceModel,
+        ac_performance: BasePerformanceModel,
+        ground_track: GroundTrack,
+        step_size: float,
         is_backwards: bool,
+        weather: Weather | None,
+        mission: Mission,
     ):
         """Function to fly an individual step of a mission; to be defined by individual
         FlightSegment children.
@@ -224,6 +307,7 @@ class ACOperationState(CIBaseModel):
     def prevent_overdefined(self):
         if len(self.rules) > 2:
             raise ValueError('At most two ``rules`` can be specified.')
+        return self
 
 
 class ControlVar(CIStrEnum):
