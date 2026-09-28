@@ -105,13 +105,13 @@ class FlightSegmentBase(CIBaseModel, ABC):
         mission: Mission,
     ):
         # Ground speed, including weather effects if required.
-        if self.weather is None:
+        if weather is None:
             pt.ground_speed = horizontal_airspeed
             pt.heading = pt.azimuth
         else:
-            track_vector = self.weather.get_track_vector(
-                time=self.mission.departure,
-                gt_point=self.ground_track.step(pt.ground_distance, 0.0),
+            track_vector = weather.get_track_vector(
+                time=mission.departure,
+                gt_point=ground_track.step(pt.ground_distance, 0.0),
                 altitude=pt.altitude,
                 horizontal_airspeed=horizontal_airspeed,
                 track_azimuth=pt.azimuth,
@@ -132,7 +132,7 @@ class FlightSegmentBase(CIBaseModel, ABC):
         dist = pt.ground_speed * seg_time
 
         # Take step along great circle route.
-        gpt = self.ground_track.step(pt.ground_distance, dist)
+        gpt = ground_track.step(pt.ground_distance, dist)
         pt.longitude = gpt.location.longitude
         pt.latitude = gpt.location.latitude
         pt.azimuth = gpt.azimuth

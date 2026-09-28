@@ -6,6 +6,7 @@ import tomllib
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
 from pydantic import model_validator
 
 from AEIC.config import config
@@ -90,7 +91,38 @@ class CFR_ROCD_Const_CAS(FlightSegmentBase):
         weather: Weather | None,
         mission: Mission,
     ):
-        pass
+        pt = traj.make_point(-1)
+        alt = pt.altitude
+        mass = pt.aircraft_mass
+
+        # Take defined altitude steps
+        new_alt = pt.altitude + step_size
+
+        state = ACOperationState(
+            altitude=alt,
+            aircraft_mass=mass,
+            rules=self.flight_rules,
+        )
+
+        # Obtain the current performance of the aircraft
+        perf = ac_performance.evaluate(
+            state=state,
+            rules=None,  # Leftover from legacy implementation
+        )
+
+        horizontal_airspeed = np.sqrt(perf.true_airspeed**2 - perf.rate_of_climb**2)
+
+        self._update_altitude_step(
+            traj=traj,
+            pt=pt,
+            new_alt=new_alt,
+            horizontal_airspeed=horizontal_airspeed,
+            perf=perf,
+            ground_track=ground_track,
+            is_backwards=is_backwards,
+            weather=weather,
+            mission=mission,
+        )
 
 
 class CFR_ROCD_Const_Mach(FlightSegmentBase):
@@ -155,7 +187,38 @@ class CFR_ROCD_Const_Mach(FlightSegmentBase):
         weather: Weather | None,
         mission: Mission,
     ):
-        pass
+        pt = traj.make_point(-1)
+        alt = pt.altitude
+        mass = pt.aircraft_mass
+
+        # Take defined altitude steps
+        new_alt = pt.altitude + step_size
+
+        state = ACOperationState(
+            altitude=alt,
+            aircraft_mass=mass,
+            rules=self.flight_rules,
+        )
+
+        # Obtain the current performance of the aircraft
+        perf = ac_performance.evaluate(
+            state=state,
+            rules=None,  # Leftover from legacy implementation
+        )
+
+        horizontal_airspeed = np.sqrt(perf.true_airspeed**2 - perf.rate_of_climb**2)
+
+        self._update_altitude_step(
+            traj=traj,
+            pt=pt,
+            new_alt=new_alt,
+            horizontal_airspeed=horizontal_airspeed,
+            perf=perf,
+            ground_track=ground_track,
+            is_backwards=is_backwards,
+            weather=weather,
+            mission=mission,
+        )
 
 
 class Const_Alt_Const_Mach(FlightSegmentBase):
@@ -177,7 +240,6 @@ class Const_Alt_Const_Mach(FlightSegmentBase):
     ):
         pt = traj.make_point(-1)
         alt = pt.altitude
-        roc = 0  # By definition of constant altitude
         mass = pt.aircraft_mass
 
         # Take defined distance steps in cruise
@@ -186,10 +248,7 @@ class Const_Alt_Const_Mach(FlightSegmentBase):
         state = ACOperationState(
             altitude=alt,
             aircraft_mass=mass,
-            rules={
-                ControlVar.ROCD: roc,
-                ControlVar.MACH: self.mach,
-            },
+            rules=self.flight_rules,
         )
 
         # Obtain the current performance of the aircraft
