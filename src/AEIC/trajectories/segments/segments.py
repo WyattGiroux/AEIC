@@ -61,6 +61,12 @@ class CFR_ROCD_Const_CAS(FlightSegmentBase):
 
         cfr_rocd_model = CFR_ROCD_Table(raw_cfr)
 
+        if not isinstance(self.end_alt, float):
+            raise TypeError(
+                f'End altitude was passed as a var name ({self.end_alt}) and has not'
+                ' been converted to a float by builder.'
+            )
+
         d_alt = self.end_alt - traj.altitude[0]
         rocd = cfr_rocd_model(d_alt, perf.number_of_engines, perf.max_range_km * 1000)
         self.flight_rules[ControlVar.ROCD] = rocd
@@ -196,6 +202,7 @@ class Const_Alt_Const_Mach(FlightSegmentBase):
             traj=traj,
             pt=pt,
             distance=distance,
+            horizontal_airspeed=perf.true_airspeed,
             perf=perf,
             ground_track=ground_track,
             is_backwards=is_backwards,

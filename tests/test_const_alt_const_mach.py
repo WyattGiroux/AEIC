@@ -1,5 +1,7 @@
 from unittest.mock import Mock
 
+import pytest
+
 from AEIC.performance.types import Performance
 from AEIC.trajectories import GroundTrack
 from AEIC.trajectories.segments import ControlVar, FlightSegment
@@ -67,9 +69,9 @@ def test_evaluate_constant_perf(sample_missions):
     # Make sure we only have two points
     assert len(alts) == 2
 
-    # No altitude/speed change
+    # No altitude change
     assert alts[-1] - alts[0] == 0
 
     # Make sure mass changed as intended
     dt = traj.flight_time[-1] - traj.flight_time[0]
-    assert mass[0] - mass[-1] == 0.1 * dt
+    assert mass[0] - mass[-1] == pytest.approx(0.1 * dt)

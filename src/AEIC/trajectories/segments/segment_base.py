@@ -14,6 +14,7 @@ from AEIC.performance.models import BasePerformanceModel
 from AEIC.performance.types import Performance
 from AEIC.storage import Container
 from AEIC.trajectories.trajectory import Trajectory
+from AEIC.units import METERS_TO_FL
 from AEIC.utils.models import CIBaseModel, CIStrEnum
 from AEIC.weather import Weather
 
@@ -41,10 +42,12 @@ class FlightSegmentBase(CIBaseModel, ABC):
         self,
         traj: Trajectory,
         perf: BasePerformanceModel,
+        ground_track: GroundTrack,
+        step_size: float,
         is_backwards: bool,
+        mission: Mission,
         step_lim: int = 1000,
         weather: Weather | None = None,
-        **kwargs,
     ) -> tuple[SegmentInterruptBase.InterruptCode, Any]:
         """Runs the flight segment starting from idx -1 in the `traj` object. Runs until
         an interrupt is reached or a number of steps set by `step_lim` are taken. If the
@@ -68,8 +71,15 @@ class FlightSegmentBase(CIBaseModel, ABC):
             if trigger:
                 return interrupt
 
-            # traj.append(self._fly_step())
-            self._fly_step(traj, perf, is_backwards)
+            self._fly_step(
+                traj=traj,
+                ac_performance=perf,
+                ground_track=ground_track,
+                step_size=step_size,
+                is_backwards=is_backwards,
+                weather=weather,
+                mission=mission,
+            )
 
         raise RuntimeError(
             f'Segment failed to run in {step_lim} steps; aborting flight.'
@@ -87,19 +97,75 @@ class FlightSegmentBase(CIBaseModel, ABC):
         traj: Trajectory,
         pt: Container,
         new_alt: float,
+        horizontal_airspeed: float,
         perf: Performance,
         ground_track: GroundTrack,
         is_backwards: bool,
         weather: Weather | None,
         mission: Mission,
     ):
-        pass
+        # Ground speed, including weather effects if required.
+        if self.weather is None:
+            pt.ground_speed = horizontal_airspeed
+            pt.heading = pt.azimuth
+        else:
+            track_vector = self.weather.get_track_vector(
+                time=self.mission.departure,
+                gt_point=self.ground_track.step(pt.ground_distance, 0.0),
+                altitude=pt.altitude,
+                horizontal_airspeed=horizontal_airspeed,
+                track_azimuth=pt.azimuth,
+            )
+            pt.ground_speed, pt.heading = (
+                track_vector.ground_speed,
+                track_vector.heading,
+            )
+
+        # Time to complete altitude step and total fuel burned.
+        seg_time = (new_alt - pt.altitude) / perf.rate_of_climb
+        seg_fuel = perf.fuel_flow * seg_time
+
+        pt.altitude = new_alt
+        pt.flight_level = pt.altitude * METERS_TO_FL
+
+        # Calculate distance along route travelled.
+        dist = pt.ground_speed * seg_time
+
+        # Take step along great circle route.
+        gpt = self.ground_track.step(pt.ground_distance, dist)
+        pt.longitude = gpt.location.longitude
+        pt.latitude = gpt.location.latitude
+        pt.azimuth = gpt.azimuth
+
+        # We cannot gain fuel by decelerating in a conventional fuel
+        # aircraft.
+        if seg_fuel < 0:
+            seg_fuel = 0
+
+        if is_backwards:
+            raise ValueError(
+                f'{self.__repr_name__} does not currently support backwards evaluation.'
+            )
+        else:
+            # Update the state vector.
+            pt.fuel_mass -= seg_fuel
+            pt.aircraft_mass -= seg_fuel
+            pt.ground_distance += dist
+
+            pt.flight_time += seg_time
+
+            traj.fuel_flow[-1] = perf.fuel_flow
+            traj.true_airspeed[-1] = perf.true_airspeed
+            traj.rate_of_climb[-1] = perf.rate_of_climb
+
+            traj.append(pt)
 
     def _update_distance_step(
         self,
         traj: Trajectory,
         pt: Container,
         distance: float,
+        horizontal_airspeed: float,
         perf: Performance,
         ground_track: GroundTrack,
         is_backwards: bool,
@@ -111,7 +177,7 @@ class FlightSegmentBase(CIBaseModel, ABC):
                 time=mission.departure,
                 gt_point=ground_track.location(distance),
                 altitude=pt.altitude,
-                horizontal_airspeed=perf.true_airspeed,
+                horizontal_airspeed=horizontal_airspeed,
                 track_azimuth=pt.azimuth,
             )
             pt.ground_speed, pt.heading = (
@@ -119,7 +185,7 @@ class FlightSegmentBase(CIBaseModel, ABC):
                 track_vector.heading,
             )
         else:
-            pt.ground_speed = perf.true_airspeed
+            pt.ground_speed = horizontal_airspeed
             pt.heading = pt.azimuth
 
         # Take step along great circle route.
