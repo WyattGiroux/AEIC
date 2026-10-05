@@ -13,7 +13,8 @@
 
         # `end_alt` accepts either a string or float. The former searches the Builder for the prescribed
         # variable using hasattr and getattr. The latter directly applies the value.
-        end_alt = 'crz_start_altitude'
+        end_alt = 'cruise_start_altitude'
+        start_alt = 0.0
 
         #[climb.initial_climb.interrupts]
         #    TBD: will include Mach = crz mach 'next' interrupt here
@@ -22,7 +23,8 @@
         segment_type = 'cfr_rocd_const_mach'
         mach = 'cruise_mach'
         roc_pos = true
-        end_alt = 'crz_start_altitude'
+        end_alt = 'cruise_start_altitude'
+        start_alt = 0.0
 
 [cruise]
     [cruise.main_cruise]
@@ -38,6 +40,7 @@
         cas = 128.6 # 250 knots in m/s
         roc_pos = false
         end_alt = 'maximum_altitude'
+        start_alt = 0.0
 
         #[descent.final_descent.interrupts]
         #    test = true
@@ -48,3 +51,4 @@
         mach = 'cruise_mach'
         roc_pos = false
         end_alt = 'maximum_altitude'
+        start_alt = 0.0

@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from enum import IntEnum, auto
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import PrivateAttr, model_validator
 
@@ -19,6 +19,9 @@ from AEIC.utils.models import CIBaseModel, CIStrEnum
 from AEIC.weather import Weather
 
 from .. import GroundTrack
+
+if TYPE_CHECKING:
+    from AEIC.trajectories.builders import StandardBuilder
 
 
 class FlightSegmentBase(CIBaseModel, ABC):
@@ -41,13 +44,10 @@ class FlightSegmentBase(CIBaseModel, ABC):
     def run(
         self,
         traj: Trajectory,
-        perf: BasePerformanceModel,
-        ground_track: GroundTrack,
+        builder: StandardBuilder,
         step_size: float,
         is_backwards: bool,
-        mission: Mission,
         step_lim: int = 1000,
-        weather: Weather | None = None,
     ) -> tuple[SegmentInterruptBase.InterruptCode, Any]:
         """Runs the flight segment starting from idx -1 in the `traj` object. Runs until
         an interrupt is reached or a number of steps set by `step_lim` are taken. If the
@@ -73,12 +73,12 @@ class FlightSegmentBase(CIBaseModel, ABC):
 
             self._fly_step(
                 traj=traj,
-                ac_performance=perf,
-                ground_track=ground_track,
+                ac_performance=builder.ac_performance,
+                ground_track=builder.ground_track,
                 step_size=step_size,
                 is_backwards=is_backwards,
-                weather=weather,
-                mission=mission,
+                weather=builder.weather,
+                mission=builder.mission,
             )
 
         raise RuntimeError(
@@ -219,6 +219,14 @@ class FlightSegmentBase(CIBaseModel, ABC):
 
             traj.append(pt)
 
+    def search_builder_params(self, builder: StandardBuilder, var: str):
+        """Searches the builder context and performance model for the variable name
+        given"""
+        try:
+            return getattr(builder, var)
+        except AttributeError:
+            return getattr(builder.ac_performance, var)
+
     @abstractmethod
     def _fly_step(
         self,
@@ -236,7 +244,7 @@ class FlightSegmentBase(CIBaseModel, ABC):
         ...
 
     @abstractmethod
-    def preexecute(self, *args, **kwargs):
+    def preexecute(self, builder: StandardBuilder, **kwargs):
         """Segments may have custom behaviors which require setup before the main
         ``fly_iteration`` call. This can be defined in concrete implementation of
         particular segments."""
@@ -312,7 +320,7 @@ class SegmentInterruptBase(CIBaseModel):
             )
         return self
 
-    def validate(self, traj: Trajectory):
+    def valid(self, traj: Trajectory):
         """Validate that a trajectory store is tracking the trigger variable."""
         assert hasattr(traj, self.var)
 

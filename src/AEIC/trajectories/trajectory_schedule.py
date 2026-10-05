@@ -5,9 +5,8 @@ import tomllib
 from pathlib import Path
 
 from AEIC.config import config
+from AEIC.performance.allowed_segments import validate_trajectory_schedule
 from AEIC.performance.models import BasePerformanceModel
-
-# from AEIC.performance.allowed_segments import ALLOWED_SEGMENTS
 from AEIC.trajectories.segments import FlightSegment
 
 
@@ -44,15 +43,8 @@ class TrajectorySchedule:
     def load_phase_from_dict(self, data: dict, phase: str):
         return [FlightSegment.load_from_dict(seg) for _, seg in data[phase].items()]
 
-    def validate(self, perf: BasePerformanceModel):
+    def valid(self, perf: BasePerformanceModel):
         """Check for compatability of all TrajectorySegments with the selected
         performance model
         """
-        # TODO: potentially replace with Enum?
-        for phase in ['climb', 'cruise', 'descent']:
-            if not self._validate_phase(perf, phase):
-                raise ValueError(f'{phase.upper()} segments failed to validate.')
-
-    def _validate_phase(self, perf: BasePerformanceModel, phase: str) -> bool:
-        """Call validation on a specific phase. Return false if any segments fail."""
-        return not any([seg.validate(perf) for seg in getattr(self, phase)])
+        validate_trajectory_schedule(self, type(perf))

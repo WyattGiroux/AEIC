@@ -1,7 +1,11 @@
 # TODO: Remove this when we migrate to Python 3.14+.
 from __future__ import annotations
 
-from AEIC.trajectories import TrajectorySchedule
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from AEIC.trajectories import TrajectorySchedule
+
 from AEIC.trajectories.segments import (
     CFR_ROCD_Const_CAS,
     CFR_ROCD_Const_Mach,

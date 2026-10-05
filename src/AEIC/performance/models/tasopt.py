@@ -7,7 +7,10 @@ from .base import BasePerformanceModel
 
 class TASOPTPerformanceModel(BasePerformanceModel[SimpleFlightRules]):
     model_type: Literal['TASOPT']
-    ...
+
+    max_range_km: float
+
+    cruise_mach: float
 
     @property
     def empty_mass(self):

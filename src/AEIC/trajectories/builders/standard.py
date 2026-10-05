@@ -108,11 +108,6 @@ class StandardContext(Context):
           3 hours if not provided (additional parameter: `approx_time`,
           approximate flight time based on distance and nominal cruise speed).
         """
-        # raise NotImplementedError('StandardContext is not yet implemented.')
-
-        # TODO: Need trajectory_schedule validation vs. performannce
-        # TODO: Need conversion of variable names to floats in TrajectorySchedule
-
         ground_track = GroundTrack.great_circle(
             mission.origin_position.location,
             mission.destination_position.location,
@@ -186,6 +181,8 @@ class StandardContext(Context):
         self.divert_distance = divert_distance
         self.hold_time = hold_time
 
+        # Validate trajectory compatibility run all the pre-execution functions
+        trajectory_schedule.valid(perf=ac_performance)
         self.trajectory_schedule = trajectory_schedule
 
         # Pass information to base context class constructor.
@@ -194,9 +191,17 @@ class StandardContext(Context):
             ac_performance,
             mission,
             ground_track,
-            initial_altitude=self.clm_start_altitude,
+            initial_altitude=self.start_altitude,
             starting_mass=starting_mass,
         )
+
+        self._pre_process_trajectory()
+
+    def _pre_process_trajectory(self):
+        """Go through each trajectory segment and set any required context variables."""
+        for phase in ['climb', 'cruise', 'descent']:
+            for segment in getattr(self.trajectory_schedule, phase):
+                segment.preexecute(self)
 
     def apply_adjustment(
         self,
